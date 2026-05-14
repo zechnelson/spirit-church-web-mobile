@@ -1,0 +1,25 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "SPIRIT-CHURCH-WEB-MOBILE (Main)"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.git": true,
+      "**/.DS_Store": true,
+      "**/node_modules": true,
+      "**/__pycache__": true,
+      "**/.next": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/.next": true,
+      "docs/Archive/**": true
+    },
+    "editor.formatOnSave": true
+  }
+}
