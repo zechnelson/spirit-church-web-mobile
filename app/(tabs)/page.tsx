@@ -8,13 +8,9 @@ import { ViewAllCard } from "@/components/home/ViewAllCard";
 import { getEvents, getGroups, getHeaderCards, getNextSteps } from "@/lib/webflow";
 
 const NEXT_STEP_COLORS = [
-  "#3c5f4d", // brand-600
-  "#796f55", // warm-700
+  "#21332b", // brand-900
   "#4c725e", // brand-500
-  "#918865", // warm-600
   "#84aa98", // brand-350
-  "#afab88", // warm-400
-  "#9cb9a8", // brand-300
   "#c6c5ab", // warm-300
 ];
 
