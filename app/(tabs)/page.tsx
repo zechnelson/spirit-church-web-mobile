@@ -5,74 +5,45 @@ import { EventCard } from "@/components/home/EventCard";
 import { NextStepCard } from "@/components/home/NextStepCard";
 import { GroupCard } from "@/components/home/GroupCard";
 import { ViewAllCard } from "@/components/home/ViewAllCard";
-
-const events = [
-  {
-    id: "1",
-    title: "Sunday Service",
-    subtitle: "Doors open at 9:30am",
-    category: "Worship",
-    date: "Sun, May 18",
-  },
-  {
-    id: "2",
-    title: "Community Night",
-    subtitle: "Connect with your people",
-    category: "Community",
-    date: "Wed, May 21",
-  },
-  {
-    id: "3",
-    title: "Young Adults Night",
-    subtitle: "For ages 18–25",
-    category: "Young Adults",
-    date: "Fri, May 23",
-  },
-  {
-    id: "4",
-    title: "Prayer & Worship",
-    subtitle: "Come as you are",
-    category: "Prayer",
-    date: "Sat, May 24",
-  },
-  {
-    id: "5",
-    title: "Baptism Sunday",
-    subtitle: "Celebrate new life with us",
-    category: "Special Event",
-    date: "Sun, Jun 1",
-  },
-];
+import { getEvents, getGroups, getHeaderCards } from "@/lib/webflow";
 
 const nextSteps = [
-  { id: "1", title: "New here?",        href: "#", color: "#304c3f" }, // brand-700
-  { id: "2", title: "Commit to Christ", href: "#", color: "#4c725e" }, // brand-500
-  { id: "3", title: "Get baptized",     href: "#", color: "#84aa98" }, // brand-350
-  { id: "4", title: "Join a team",      href: "#", color: "#c6c5ab" }, // warm-300
+  { id: "1", title: "New here?",        href: "#", color: "#304c3f" },
+  { id: "2", title: "Commit to Christ", href: "#", color: "#4c725e" },
+  { id: "3", title: "Get baptized",     href: "#", color: "#84aa98" },
+  { id: "4", title: "Join a team",      href: "#", color: "#c6c5ab" },
 ];
 
-const groups = [
-  { id: "1", title: "Young Professionals", category: "Small Group" },
-  { id: "2", title: "Married Couples", category: "Small Group" },
-  { id: "3", title: "Men's Group", category: "Small Group" },
-  { id: "4", title: "Women's Group", category: "Small Group" },
-  { id: "5", title: "College Ministry", category: "Small Group" },
-];
+export default async function HomePage() {
+  const [events, sliderCards, groups] = await Promise.all([
+    getEvents().catch(() => []),
+    getHeaderCards().catch(() => []),
+    getGroups().catch(() => []),
+  ]);
 
-export default function HomePage() {
+  const hero = sliderCards[0];
+
   return (
     <div className="pb-6">
       <HomeHeader />
 
-      <HeroBanner
-        text="It's a good day to have a great day!"
-        href="#"
-        handle="@spiritchurch.co"
-      />
+      {hero ? (
+        <HeroBanner text={hero.text} href={hero.href} imageSrc={hero.imageSrc} />
+      ) : (
+        <HeroBanner text="Welcome to Spirit Church" href="#" />
+      )}
 
       <CarouselSection title="Upcoming events">
         {events.slice(0, 8).map((event) => (
-          <EventCard key={event.id} {...event} />
+          <EventCard
+            key={event.id}
+            title={event.title}
+            subtitle={event.time || event.location}
+            category={event.category}
+            date={event.date}
+            imageSrc={event.imageSrc}
+            href={event.href}
+          />
         ))}
         <ViewAllCard href="https://www.spiritchurch.co/events" />
       </CarouselSection>
@@ -83,12 +54,27 @@ export default function HomePage() {
         ))}
       </CarouselSection>
 
-      <CarouselSection title="Join a group">
-        {groups.slice(0, 8).map((group) => (
-          <GroupCard key={group.id} {...group} />
-        ))}
-        <ViewAllCard href="https://www.spiritchurch.co/groups-finder" />
-      </CarouselSection>
+      {groups.length > 0 ? (
+        <CarouselSection title="Join a group">
+          {groups.slice(0, 8).map((group) => (
+            <GroupCard key={group.id} {...group} />
+          ))}
+          <ViewAllCard href="https://www.spiritchurch.co/groups-finder" />
+        </CarouselSection>
+      ) : (
+        <div className="px-4 pt-6">
+          <p className="mb-3 text-[15px] font-bold text-ink-900">Join a group</p>
+          <a
+            href="https://www.spiritchurch.co/groups-finder"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-ink-300 bg-white px-6 py-8 text-center active:opacity-70"
+          >
+            <p className="text-[14px] font-semibold text-ink-900">No groups found</p>
+            <p className="text-[12px] text-ink-600">We may be preparing for a new semester</p>
+          </a>
+        </div>
+      )}
     </div>
   );
 }

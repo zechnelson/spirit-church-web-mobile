@@ -44,9 +44,6 @@ export function EventCard({
           </p>
         </div>
         <div className="mt-2 flex items-center justify-between">
-          <span className="rounded-full bg-ink-200 px-2 py-0.5 text-[10px] font-medium text-ink-800">
-            {category}
-          </span>
           <span className="text-[10px] text-ink-600">{date}</span>
         </div>
       </div>

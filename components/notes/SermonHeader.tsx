@@ -2,7 +2,7 @@ interface SermonHeaderProps {
   title: string;
   speaker: string;
   date: string;
-  scripture: string;
+  scripture?: string;
 }
 
 export function SermonHeader({ title, speaker, date, scripture }: SermonHeaderProps) {
@@ -15,13 +15,15 @@ export function SermonHeader({ title, speaker, date, scripture }: SermonHeaderPr
         {title}
       </h1>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-[13px] text-ink-600">{speaker}</span>
-        <span className="text-ink-300">·</span>
-        <span className="text-[13px] text-ink-600">{date}</span>
+        {speaker && <span className="text-[13px] text-ink-600">{speaker}</span>}
+        {speaker && date && <span className="text-ink-300">·</span>}
+        {date && <span className="text-[13px] text-ink-600">{date}</span>}
       </div>
-      <div className="mt-3 inline-flex items-center rounded-full bg-brand-50 px-3 py-1">
-        <span className="text-[12px] font-medium text-brand-700">{scripture}</span>
-      </div>
+      {scripture && (
+        <div className="mt-3 inline-flex items-center rounded-full bg-brand-50 px-3 py-1">
+          <span className="text-[12px] font-medium text-brand-700">{scripture}</span>
+        </div>
+      )}
     </div>
   );
 }

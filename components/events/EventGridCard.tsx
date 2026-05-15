@@ -33,10 +33,6 @@ export function EventGridCard({
           className="object-cover"
           sizes="(max-width: 512px) 50vw, 256px"
         />
-        {/* Category badge over image */}
-        <span className="absolute left-2 top-2 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
-          {category}
-        </span>
       </div>
 
       {/* Content */}
