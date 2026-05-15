@@ -132,7 +132,7 @@ export async function getHeaderCards(): Promise<AppSliderCard[]> {
 
 export async function getLatestMessage(): Promise<AppMessage | null> {
   const res = await wfFetch<WfListResponse>(
-    `/collections/${COLLECTIONS.messages}/items?limit=1&sortBy=lastPublished&sortOrder=desc`
+    `/collections/${COLLECTIONS.messages}/items?limit=1&sortBy=lastUpdated&sortOrder=desc`
   );
   const item = res.items[0];
   if (!item) return null;
@@ -154,7 +154,7 @@ export async function getLatestMessage(): Promise<AppMessage | null> {
   }
 
   let outlineLines: string[] = [];
-  const notesLink = fd["message-notes-link"] as string | null;
+  const notesLink = fd["sermon-notes-download"] as string | null;
   if (notesLink?.includes("docs.google.com")) {
     outlineLines = await fetchGoogleDocLines(notesLink);
   }
