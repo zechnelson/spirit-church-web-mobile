@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, FileText } from "lucide-react";
 
 interface FloatingNoteButtonProps {
   onAddNote: (text: string) => void;
   selectedText?: string;
   onClearSelection?: () => void;
+  onOpenNotesModal?: () => void;
 }
 
 export function FloatingNoteButton({
   onAddNote,
   selectedText = "",
   onClearSelection,
+  onOpenNotesModal,
 }: FloatingNoteButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [text, setText] = useState("");
@@ -118,7 +120,20 @@ export function FloatingNoteButton({
         </button>
       </div>
 
-      {/* FAB */}
+      {/* My Notes FAB */}
+      <button
+        onClick={onOpenNotesModal}
+        aria-label="View my notes"
+        className="fixed z-40 flex h-14 w-14 items-center justify-center rounded-full border border-ink-300 bg-white shadow-lg transition-transform active:scale-95"
+        style={{
+          bottom: "calc(env(safe-area-inset-bottom) + 80px + 56px + 12px)",
+          right: "1rem",
+        }}
+      >
+        <FileText size={22} strokeWidth={1.75} className="text-ink-800" />
+      </button>
+
+      {/* Add Note FAB */}
       <button
         onClick={() => setIsOpen(true)}
         aria-label="Add a quick note"

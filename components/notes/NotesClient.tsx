@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SermonOutline } from "./SermonOutline";
 import { NoteEditor } from "./NoteEditor";
 import { FloatingNoteButton } from "./FloatingNoteButton";
+import { MyNotesModal } from "./MyNotesModal";
 
 interface NotesClientProps {
   sermonTitle: string;
@@ -14,6 +15,7 @@ interface NotesClientProps {
 export function NotesClient({ sermonTitle, speaker, outlineLines }: NotesClientProps) {
   const [notes, setNotes] = useState("");
   const [selectedText, setSelectedText] = useState("");
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
 
   const appendNote = (text: string) => {
     setNotes((prev) => (prev.trim() ? `${prev}\n${text}` : text));
@@ -38,6 +40,16 @@ export function NotesClient({ sermonTitle, speaker, outlineLines }: NotesClientP
         onAddNote={appendNote}
         selectedText={selectedText}
         onClearSelection={clearSelection}
+        onOpenNotesModal={() => setIsNotesModalOpen(true)}
+      />
+      <MyNotesModal
+        isOpen={isNotesModalOpen}
+        onClose={() => setIsNotesModalOpen(false)}
+        notes={notes}
+        onNotesChange={setNotes}
+        sermonTitle={sermonTitle}
+        speaker={speaker}
+        outlineLines={outlineLines}
       />
     </>
   );
