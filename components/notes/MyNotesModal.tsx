@@ -36,7 +36,7 @@ export function MyNotesModal({
       <div
         className="fixed bottom-0 left-0 right-0 z-[60] mx-auto flex max-w-lg flex-col rounded-t-2xl bg-background shadow-2xl transition-transform duration-300 ease-out will-change-transform"
         style={{
-          height: "55vh",
+          height: "75vh",
           transform: isOpen ? "translateY(0)" : "translateY(110%)",
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
