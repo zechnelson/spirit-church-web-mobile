@@ -33,8 +33,8 @@ spirit-church-web-mobile/
 | System              | Status   | Doc                                    |
 | ------------------- | -------- | -------------------------------------- |
 | Events              | PLANNING | `docs/Development/events.md`           |
-| Sermon Notes        | PLANNING | `docs/Development/sermon-notes.md`     |
-| Church Links        | PLANNING | `docs/Development/church-links.md`     |
+| Sermon Notes        | ACTIVE   | `docs/Development/sermon-notes.md`     |
+| Church Links        | ACTIVE   | `docs/Development/church-links.md`     |
 | Auth / User Account | PLANNING | `docs/Development/auth.md`             |
 
 ## Documentation Table of Contents
@@ -78,8 +78,8 @@ spirit-church-web-mobile/
 
 | File | Description |
 | ---- | ----------- |
-
-<!-- Add development docs as features are built -->
+| `sermon-notes.md` | Webflow CMS connection, Google Doc fetch, My Notes modal, Sunday time-gate plan |
+| `church-links.md` | Next Steps CMS collection, color palette, home page carousels |
 
 ### Debug/ — Troubleshooting
 
