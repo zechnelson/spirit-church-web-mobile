@@ -5,20 +5,25 @@ import { EventCard } from "@/components/home/EventCard";
 import { NextStepCard } from "@/components/home/NextStepCard";
 import { GroupCard } from "@/components/home/GroupCard";
 import { ViewAllCard } from "@/components/home/ViewAllCard";
-import { getEvents, getGroups, getHeaderCards } from "@/lib/webflow";
+import { getEvents, getGroups, getHeaderCards, getNextSteps } from "@/lib/webflow";
 
-const nextSteps = [
-  { id: "1", title: "New here?",        href: "#", color: "#304c3f" },
-  { id: "2", title: "Commit to Christ", href: "#", color: "#4c725e" },
-  { id: "3", title: "Get baptized",     href: "#", color: "#84aa98" },
-  { id: "4", title: "Join a team",      href: "#", color: "#c6c5ab" },
+const NEXT_STEP_COLORS = [
+  "#3c5f4d", // brand-600
+  "#796f55", // warm-700
+  "#4c725e", // brand-500
+  "#918865", // warm-600
+  "#84aa98", // brand-350
+  "#afab88", // warm-400
+  "#9cb9a8", // brand-300
+  "#c6c5ab", // warm-300
 ];
 
 export default async function HomePage() {
-  const [events, sliderCards, groups] = await Promise.all([
+  const [events, sliderCards, groups, nextSteps] = await Promise.all([
     getEvents().catch(() => []),
     getHeaderCards().catch(() => []),
     getGroups().catch(() => []),
+    getNextSteps().catch(() => []),
   ]);
 
   const hero = sliderCards[0];
@@ -49,8 +54,13 @@ export default async function HomePage() {
       </CarouselSection>
 
       <CarouselSection title="Your next step">
-        {nextSteps.map((step) => (
-          <NextStepCard key={step.id} {...step} />
+        {nextSteps.map((step, i) => (
+          <NextStepCard
+            key={step.id}
+            title={step.title}
+            href={step.href}
+            color={NEXT_STEP_COLORS[i % NEXT_STEP_COLORS.length]}
+          />
         ))}
       </CarouselSection>
 

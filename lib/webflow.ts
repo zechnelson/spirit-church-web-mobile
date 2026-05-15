@@ -9,6 +9,7 @@ const COLLECTIONS = {
   speakers: "68ae1c452c9ac726c7a74691",
   headerCards: "6a068822d95ce2e41e516c89",
   groups: "694eff6ac57ffe6994797761",
+  nextSteps: "6a06a5f50e11665321904497",
 } as const;
 
 interface WfImage {
@@ -192,6 +193,29 @@ export async function getGroups(): Promise<AppGroup[]> {
       category: "Small Group",
       href: (item.fieldData["registration-url"] as string | null) ?? "#",
     }));
+}
+
+export interface AppNextStep {
+  id: string;
+  title: string;
+  href: string;
+  sortOrder: number;
+}
+
+export async function getNextSteps(): Promise<AppNextStep[]> {
+  const res = await wfFetch<WfListResponse>(
+    `/collections/${COLLECTIONS.nextSteps}/items?limit=100`,
+    3600
+  );
+  return res.items
+    .filter((item) => !item.isArchived && !item.isDraft)
+    .map((item) => ({
+      id: item.id,
+      title: item.fieldData.name as string,
+      href: (item.fieldData.link as string | null) ?? "#",
+      sortOrder: (item.fieldData["sort-order"] as number | null) ?? 0,
+    }))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 async function fetchGoogleDocLines(docUrl: string): Promise<string[]> {
