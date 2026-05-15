@@ -25,7 +25,7 @@ export function EventGridCard({
       className="flex flex-col overflow-hidden rounded-2xl border border-ink-300 bg-white active:opacity-80"
     >
       {/* Image */}
-      <div className="relative aspect-[4/3] w-full">
+      <div className="relative aspect-video w-full">
         <Image
           src={imageSrc}
           alt=""

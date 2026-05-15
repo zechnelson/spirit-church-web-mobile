@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Share2, Copy, Check } from "lucide-react";
+import { Share2, Copy, Check, Mail } from "lucide-react";
 
 interface NoteEditorProps {
   notes: string;
@@ -36,6 +36,12 @@ export function NoteEditor({
     notes,
   ].join("\n");
 
+  const handleCopy = useCallback(async () => {
+    await navigator.clipboard.writeText(shareText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [shareText]);
+
   const handleShare = useCallback(async () => {
     if (canShare) {
       try {
@@ -45,10 +51,10 @@ export function NoteEditor({
       }
       return;
     }
-
-    await navigator.clipboard.writeText(shareText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    // Desktop fallback: open email client pre-populated with notes
+    const subject = encodeURIComponent(`${sermonTitle} — My Notes`);
+    const body = encodeURIComponent(shareText);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }, [canShare, sermonTitle, shareText]);
 
   return (
@@ -88,34 +94,38 @@ export function NoteEditor({
         </div>
       </label>
 
-      <button
-        onClick={handleShare}
-        disabled={notes.trim().length === 0}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-[14px] font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-40"
-      >
-        {copied ? (
-          <>
-            <Check size={16} strokeWidth={2.5} />
-            Copied!
-          </>
-        ) : canShare ? (
-          <>
-            <Share2 size={16} strokeWidth={2} />
-            Share Notes
-          </>
-        ) : (
-          <>
-            <Copy size={16} strokeWidth={2} />
-            Copy Notes
-          </>
-        )}
-      </button>
+      <div className="mt-3 flex flex-col gap-2">
+        <button
+          onClick={handleCopy}
+          disabled={notes.trim().length === 0}
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-ink-300 bg-white px-4 py-3 text-[14px] font-semibold text-ink-900 transition-opacity active:opacity-70 disabled:opacity-40"
+        >
+          {copied ? (
+            <>
+              <Check size={16} strokeWidth={2.5} className="text-brand-600" />
+              Copied!
+            </>
+          ) : (
+            <>
+              <Copy size={16} strokeWidth={2} />
+              Copy
+            </>
+          )}
+        </button>
 
-      <p className="mt-2 text-center text-[11px] text-ink-600">
-        {canShare
-          ? "Share via Messages, Mail, or any app"
-          : "Copies title + your notes to clipboard"}
-      </p>
+        <button
+          onClick={handleShare}
+          disabled={notes.trim().length === 0}
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-[14px] font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-40"
+        >
+          {canShare ? (
+            <Share2 size={16} strokeWidth={2} />
+          ) : (
+            <Mail size={16} strokeWidth={2} />
+          )}
+          Share
+        </button>
+      </div>
     </div>
   );
 }

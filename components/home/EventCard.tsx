@@ -20,32 +20,26 @@ export function EventCard({
   return (
     <a
       href={href}
-      className="flex w-64 flex-shrink-0 snap-start overflow-hidden rounded-xl border border-ink-300 bg-white active:opacity-80"
+      className="flex w-48 flex-shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-ink-300 bg-white active:opacity-80"
     >
-      {/* Thumbnail */}
-      <div className="relative h-full w-20 flex-shrink-0">
+      {/* 4:3 image */}
+      <div className="relative aspect-video w-full">
         <Image
           src={imageSrc}
           alt=""
           fill
           className="object-cover"
-          sizes="80px"
+          sizes="192px"
         />
       </div>
 
       {/* Content */}
-      <div className="flex flex-1 flex-col justify-between p-3">
-        <div>
-          <p className="text-[13px] font-semibold leading-snug text-ink-900">
-            {title}
-          </p>
-          <p className="mt-0.5 text-[11px] leading-snug text-ink-600">
-            {subtitle}
-          </p>
-        </div>
-        <div className="mt-2 flex items-center justify-between">
-          <span className="text-[10px] text-ink-600">{date}</span>
-        </div>
+      <div className="flex flex-col gap-1 p-3">
+        <p className="text-[13px] font-semibold leading-snug text-ink-900 line-clamp-2">
+          {title}
+        </p>
+        <p className="text-[11px] text-brand-600 font-medium">{date}</p>
+        <p className="text-[11px] leading-snug text-ink-600">{subtitle}</p>
       </div>
     </a>
   );
