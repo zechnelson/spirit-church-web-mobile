@@ -10,9 +10,12 @@ Home page sections that surface church connection points: the "Your Next Step" c
 | ---- | ------- |
 | `app/(tabs)/page.tsx` | Home page — fetches all CMS data in parallel, renders carousels |
 | `lib/webflow.ts` → `getNextSteps()` | Fetches Next Steps collection, sorts by `sort-order` |
+| `lib/sunday-hero.ts` | Pure utility — returns time-gated hero card config or null based on Arizona service windows |
+| `lib/__tests__/sunday-hero.test.ts` | 14 unit tests covering all service window boundaries |
+| `components/home/HeroBanner.tsx` | Hero image card — supports share sheet (CMS card) or direct link button (Sunday cards) |
+| `components/home/HeroBannerClient.tsx` | Client wrapper — checks time on mount, picks Sunday card or CMS fallback |
 | `components/home/NextStepCard.tsx` | Individual card — colored background, title, external link arrow |
 | `components/home/CarouselSection.tsx` | Horizontal scroll carousel wrapper used by all home sections |
-| `components/home/HeroBanner.tsx` | Hero image card at top of home page with share sheet (Facebook/X) |
 
 ## Webflow CMS
 
@@ -38,6 +41,36 @@ Cards cycle through these 4 colors by index (repeats for 5+ items):
 | 1 | `#4c725e` | brand-500 |
 | 2 | `#84aa98` | brand-350 |
 | 3 | `#c6c5ab` | warm-300 |
+
+## Hero Banner — Time-Gated Cards
+
+The hero banner at the top of the home page shows different cards depending on the time of day on Sundays.
+
+### Service Windows (Arizona time, UTC-7, no DST)
+
+| Window | Card |
+|---|---|
+| Sun 9:00–9:50 AM | "Connect with us" → `spiritchurch.co/connection-card` |
+| Sun 9:50–10:10 AM | "I said yes to Jesus" → `spiritchurch.co/connect/salvation` |
+| Sun 10:45–11:35 AM | "Connect with us" → `spiritchurch.co/connection-card` |
+| Sun 11:35–11:55 AM | "I said yes to Jesus" → `spiritchurch.co/connect/salvation` |
+| All other times | CMS shareable quote (from Webflow `getHeaderCards()`) |
+
+### How It Works
+
+- `getSundayHeroCard(now?)` in `lib/sunday-hero.ts` is a pure function — pass a `Date` to test, or call with no args for the real clock.
+- `HeroBannerClient` is a `"use client"` wrapper that initializes with the server-fetched CMS card (avoids hydration mismatch), then swaps to a Sunday card on mount via `useEffect`.
+- Sunday cards use `directLinkButton` prop on `HeroBanner` — replaces the share sheet with a plain arrow link to the card URL.
+- Card images: `/images/connect-card-bg.png` and `/images/salvation-card-bg.png`.
+
+### Testing Time Windows
+
+Temporarily hardcode a date in `HeroBannerClient.tsx` to verify a specific window:
+```tsx
+const sunday = getSundayHeroCard(new Date("2026-06-07T16:00:00.000Z")); // 9:00 AM AZ — connect
+const sunday = getSundayHeroCard(new Date("2026-06-07T16:50:00.000Z")); // 9:50 AM AZ — yes to Jesus
+```
+Run `npm test` to verify all 14 unit tests pass.
 
 ## Recent Sessions
 
@@ -72,3 +105,24 @@ Cards cycle through these 4 colors by index (repeats for 5+ items):
 - `components/home/HeroBanner.tsx` — button sizes, background, icon sizes, handle opacity
 
 **Status:** VERIFIED WORKING
+
+### Session 03 (2026-05-29) — Time-gated hero banner
+
+**Goal:** Show "Connect with us" and "I said yes to Jesus" cards during Sunday services instead of the CMS quote card.
+
+**Solution:**
+- Added `getSundayHeroCard()` pure utility in `lib/sunday-hero.ts` — reads Arizona time via `Intl.DateTimeFormat`, returns card config or null based on service windows
+- Created `HeroBannerClient` client wrapper — initializes from CMS fallback (server-safe), swaps to Sunday card in `useEffect` on mount
+- Added `directLinkButton` prop to `HeroBanner` — when true, replaces social share sheet with a plain arrow link to the card's href
+- Set up Vitest with 14 unit tests covering all window boundaries and edge cases
+
+**Files Modified:**
+- `lib/sunday-hero.ts` — new: time utility
+- `lib/__tests__/sunday-hero.test.ts` — new: 14 unit tests
+- `vitest.config.ts` — new: Vitest config (node env)
+- `package.json` — added vitest dev dependency and test script
+- `components/home/HeroBannerClient.tsx` — new: client wrapper
+- `components/home/HeroBanner.tsx` — added `directLinkButton` prop
+- `app/(tabs)/page.tsx` — swapped `<HeroBanner>` for `<HeroBannerClient>`
+
+**Status:** VERIFIED WORKING (browser-tested all three card states, 14/14 tests pass)

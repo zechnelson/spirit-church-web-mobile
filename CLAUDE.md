@@ -80,7 +80,7 @@ spirit-church-web-mobile/
 | File | Description |
 | ---- | ----------- |
 | `sermon-notes.md` | Webflow CMS connection, Google Doc fetch, My Notes modal, Sunday time-gate plan |
-| `church-links.md` | Next Steps CMS collection, color palette, home page carousels |
+| `church-links.md` | Next Steps CMS collection, color palette, home page carousels, time-gated hero banner |
 | `navigation.md`   | BottomNav component — tab bar, active states, hide-on-scroll |
 
 ### Debug/ — Troubleshooting
