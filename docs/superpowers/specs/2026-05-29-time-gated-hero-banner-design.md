@@ -24,12 +24,12 @@ Spirit Church meets at Hamilton High School, Chandler AZ. Two Sunday services, 7
 **Connect with us**
 - Text: `Connect with us`
 - href: `https://www.spiritchurch.co/connection-card`
-- imageSrc: `/images/header-card-bg.png` (placeholder — replace with dedicated photo)
+- imageSrc: `/images/connect-card-bg.png`
 
 **I said yes to Jesus**
 - Text: `I said "yes" to Jesus`
 - href: `https://www.spiritchurch.co/connect/salvation`
-- imageSrc: `/images/header-card-bg.png` (placeholder — replace with dedicated photo)
+- imageSrc: `/images/salvation-card-bg.png`
 
 ## Architecture
 
@@ -62,4 +62,4 @@ All three card variants use the existing `HeroBanner` component unchanged — sa
 
 - Live polling / auto-swap while the page is open (card updates on next navigation to Home)
 - Admin UI for editing service times
-- Per-service image customization (images are placeholders until photos are provided)
+- Per-service image customization (images are set: `connect-card-bg.png` and `salvation-card-bg.png`)

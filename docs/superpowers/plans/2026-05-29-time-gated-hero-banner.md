@@ -217,13 +217,13 @@ export interface SundayHeroCard {
 const CONNECT_CARD: SundayHeroCard = {
   text: "Connect with us",
   href: "https://www.spiritchurch.co/connection-card",
-  imageSrc: "/images/header-card-bg.png",
+  imageSrc: "/images/connect-card-bg.png",
 };
 
 const SALVATION_CARD: SundayHeroCard = {
   text: 'I said "yes" to Jesus',
   href: "https://www.spiritchurch.co/connect/salvation",
-  imageSrc: "/images/header-card-bg.png",
+  imageSrc: "/images/salvation-card-bg.png",
 };
 
 // Minutes-since-midnight windows (Arizona time).
