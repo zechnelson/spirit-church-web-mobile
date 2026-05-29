@@ -16,11 +16,25 @@ interface HeroBannerClientProps {
 
 export function HeroBannerClient({ fallback }: HeroBannerClientProps) {
   const [card, setCard] = useState<HeroCard>(fallback);
+  const [isSundayCard, setIsSundayCard] = useState(false);
 
   useEffect(() => {
     const sunday = getSundayHeroCard();
-    setCard(sunday ?? fallback);
+    if (sunday) {
+      setCard(sunday);
+      setIsSundayCard(true);
+    } else {
+      setCard(fallback);
+      setIsSundayCard(false);
+    }
   }, [fallback]);
 
-  return <HeroBanner text={card.text} href={card.href} imageSrc={card.imageSrc} />;
+  return (
+    <HeroBanner
+      text={card.text}
+      href={card.href}
+      imageSrc={card.imageSrc}
+      directLinkButton={isSundayCard}
+    />
+  );
 }

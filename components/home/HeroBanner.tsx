@@ -21,6 +21,7 @@ interface HeroBannerProps {
   href: string;
   imageSrc?: string;
   handle?: string;
+  directLinkButton?: boolean;
 }
 
 export function HeroBanner({
@@ -28,6 +29,7 @@ export function HeroBanner({
   href,
   imageSrc = "/images/header-card-bg.png",
   handle = "@spiritchurch.co",
+  directLinkButton = false,
 }: HeroBannerProps) {
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -64,57 +66,71 @@ export function HeroBanner({
           />
         )}
 
-        {/* Top-right: arrow button + slide-in share icons */}
+        {/* Top-right: arrow button (direct link or share toggle) */}
         <div className="absolute right-3 top-3 z-20 flex items-center">
-          {/* Share icons — slide in to the left of the button */}
-          <div
-            className={`flex items-center gap-1.5 overflow-hidden transition-all duration-250 ease-out ${
-              shareOpen ? "max-w-[116px] pr-1.5 opacity-100" : "max-w-0 pr-0 opacity-0"
-            }`}
-          >
+          {directLinkButton ? (
             <a
-              href={facebookUrl}
+              href={href}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white text-ink-800 active:opacity-70"
             >
-              <FacebookIcon />
+              <ArrowUpRight size={22} strokeWidth={2} />
             </a>
-            <a
-              href={xUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white text-ink-800 active:opacity-70"
-            >
-              <XLogoIcon />
-            </a>
-          </div>
+          ) : (
+            <>
+              {/* Share icons — slide in to the left of the button */}
+              <div
+                className={`flex items-center gap-1.5 overflow-hidden transition-all duration-250 ease-out ${
+                  shareOpen ? "max-w-[116px] pr-1.5 opacity-100" : "max-w-0 pr-0 opacity-0"
+                }`}
+              >
+                <a
+                  href={facebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white text-ink-800 active:opacity-70"
+                >
+                  <FacebookIcon />
+                </a>
+                <a
+                  href={xUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white text-ink-800 active:opacity-70"
+                >
+                  <XLogoIcon />
+                </a>
+              </div>
 
-          {/* Arrow / close toggle button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShareOpen((prev) => !prev);
-            }}
-            className="relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white text-ink-800 active:opacity-70"
-          >
-            <ArrowUpRight
-              size={22}
-              strokeWidth={2}
-              className={`absolute transition-all duration-200 ${
-                shareOpen ? "scale-50 opacity-0" : "scale-100 opacity-100"
-              }`}
-            />
-            <CloseIcon
-              size={18}
-              strokeWidth={2.5}
-              className={`absolute transition-all duration-200 ${
-                shareOpen ? "scale-100 opacity-100" : "scale-50 opacity-0"
-              }`}
-            />
-          </button>
+              {/* Arrow / close toggle button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShareOpen((prev) => !prev);
+                }}
+                className="relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white text-ink-800 active:opacity-70"
+              >
+                <ArrowUpRight
+                  size={22}
+                  strokeWidth={2}
+                  className={`absolute transition-all duration-200 ${
+                    shareOpen ? "scale-50 opacity-0" : "scale-100 opacity-100"
+                  }`}
+                />
+                <CloseIcon
+                  size={18}
+                  strokeWidth={2.5}
+                  className={`absolute transition-all duration-200 ${
+                    shareOpen ? "scale-100 opacity-100" : "scale-50 opacity-0"
+                  }`}
+                />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Handle + text */}
