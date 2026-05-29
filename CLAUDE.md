@@ -85,8 +85,7 @@ spirit-church-web-mobile/
 
 | File | Description |
 | ---- | ----------- |
-
-<!-- Add debug guides as issues are solved -->
+| `turbopack-home-dir-crash.md` | Dev server kernel crashes caused by stray `~/package.json` — root cause, fix, and how to detect recurrence |
 
 ### Analytics/ — Marketing & data
 
