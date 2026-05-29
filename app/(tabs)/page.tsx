@@ -1,5 +1,5 @@
 import { HomeHeader } from "@/components/home/HomeHeader";
-import { HeroBanner } from "@/components/home/HeroBanner";
+import { HeroBannerClient } from "@/components/home/HeroBannerClient";
 import { CarouselSection } from "@/components/home/CarouselSection";
 import { EventCard } from "@/components/home/EventCard";
 import { NextStepCard } from "@/components/home/NextStepCard";
@@ -28,11 +28,9 @@ export default async function HomePage() {
     <div className="pb-6">
       <HomeHeader />
 
-      {hero ? (
-        <HeroBanner text={hero.text} href={hero.href} imageSrc={hero.imageSrc} />
-      ) : (
-        <HeroBanner text="Welcome to Spirit Church" href="#" />
-      )}
+      <HeroBannerClient
+        fallback={hero ?? { text: "Welcome to Spirit Church", href: "#" }}
+      />
 
       <CarouselSection title="Upcoming events">
         {events.slice(0, 8).map((event) => (
