@@ -1,72 +1,47 @@
 "use client";
 
-import { useRef } from "react";
+import { InlineNoteChunk } from "./InlineNoteChunk";
 
 interface SermonOutlineProps {
   lines: string[];
-  onTextSelected?: (text: string) => void;
+  onSaveNote: (text: string) => void;
 }
 
-export function SermonOutline({ lines, onTextSelected }: SermonOutlineProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const handlePointerUp = () => {
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) return;
-
-    const text = selection.toString().trim();
-    if (!text) return;
-
-    // Only fire if the selection is within this container
-    if (containerRef.current?.contains(selection.anchorNode)) {
-      onTextSelected?.(text);
+function chunkLines(lines: string[]): string[][] {
+  const chunks: string[][] = [];
+  let current: string[] = [];
+  for (const line of lines) {
+    if (/^[_-]{3,}$/.test(line.trim())) {
+      if (current.length > 0) chunks.push(current);
+      current = [];
+    } else {
+      current.push(line);
     }
-  };
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks.length > 0 ? chunks : [lines];
+}
+
+export function SermonOutline({ lines, onSaveNote }: SermonOutlineProps) {
+  const chunks = chunkLines(lines);
 
   return (
     <div className="mx-4 rounded-2xl bg-white px-5 py-5">
       <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-ink-600">
         Sermon Notes
       </p>
-      {/* select-text ensures text is selectable on all devices */}
-      <div
-        ref={containerRef}
-        onPointerUp={handlePointerUp}
-        className="select-text space-y-2"
-      >
-        {lines.map((line, i) => {
-          if (line === "") return <div key={i} className="h-2" />;
-
-          if (line.startsWith("“") || line.startsWith('"')) {
-            return (
-              <p key={i} className="border-l-2 border-brand-300 pl-3 text-[14px] italic leading-relaxed text-ink-600">
-                {line}
-              </p>
-            );
-          }
-
-          if (line === line.toUpperCase() || line.endsWith(":")) {
-            return (
-              <p key={i} className="pt-1 text-[13px] font-bold text-ink-900">
-                {line}
-              </p>
-            );
-          }
-
-          if (line.startsWith("•") || line.startsWith("-") || /^\d+\./.test(line)) {
-            return (
-              <p key={i} className="pl-3 text-[14px] leading-relaxed text-ink-800">
-                {line}
-              </p>
-            );
-          }
-
-          return (
-            <p key={i} className="text-[14px] leading-relaxed text-ink-800">
-              {line}
-            </p>
-          );
-        })}
+      <div className="space-y-0">
+        {chunks.map((chunk, i) => (
+          <div key={i}>
+            <InlineNoteChunk
+              lines={chunk}
+              onSaveNote={onSaveNote}
+            />
+            {i < chunks.length - 1 && (
+              <hr className="my-5 border-ink-100" />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

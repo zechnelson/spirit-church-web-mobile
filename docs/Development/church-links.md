@@ -12,6 +12,7 @@ Home page sections that surface church connection points: the "Your Next Step" c
 | `lib/webflow.ts` → `getNextSteps()` | Fetches Next Steps collection, sorts by `sort-order` |
 | `components/home/NextStepCard.tsx` | Individual card — colored background, title, external link arrow |
 | `components/home/CarouselSection.tsx` | Horizontal scroll carousel wrapper used by all home sections |
+| `components/home/HeroBanner.tsx` | Hero image card at top of home page with share sheet (Facebook/X) |
 
 ## Webflow CMS
 
@@ -55,3 +56,19 @@ Cards cycle through these 4 colors by index (repeats for 5+ items):
 - `app/(tabs)/page.tsx` — replaced hardcoded array with CMS fetch, updated color palette
 
 **Status:** VERIFIED WORKING (4 items live in Webflow)
+
+### Session 02 (2026-05-29) — HeroBanner share button UI polish
+
+**Goal:** Improve the share button and social icons in the hero banner for better tap targets and visual consistency.
+
+**Solution:**
+- Grew share toggle button from `h-8 w-8` → `h-11 w-11`; icon from `size={16}` → `size={22}`
+- Changed share button background from `bg-white/20 backdrop-blur-sm` to solid `bg-white` with `text-ink-800` icon
+- Matched Facebook and X social buttons to same `h-11 w-11` solid white style; SVG icons bumped to `h-5 w-5`
+- Widened slide-out container from `max-w-[92px]` → `max-w-[116px]` to fit larger buttons
+- Bumped `@spiritchurch.co` handle opacity from `text-white/60` → `text-white/90` for legibility
+
+**Files Modified:**
+- `components/home/HeroBanner.tsx` — button sizes, background, icon sizes, handle opacity
+
+**Status:** VERIFIED WORKING

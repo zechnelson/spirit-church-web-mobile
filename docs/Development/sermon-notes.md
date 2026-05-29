@@ -16,6 +16,7 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 | `components/notes/FloatingNoteButton.tsx` | Green plus FAB (quick note sheet) + white FileText FAB (My Notes modal) |
 | `components/notes/MyNotesModal.tsx` | 3/4-screen bottom sheet modal wrapping NoteEditor |
 | `components/notes/SermonHeader.tsx` | Title, speaker, date display at top of page |
+| `components/notes/InlineNoteChunk.tsx` | Renders one outline chunk with inline accordion note input |
 | `components/nav/BottomNav.tsx` | Fixed bottom nav (will-change-transform applied for scroll stability) |
 
 ## Webflow CMS
@@ -41,6 +42,24 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 - Logic runs server-side in `getLatestMessage()` — compute the most recent Sunday-at-6AM window, fetch the item whose date matches
 
 ## Recent Sessions
+
+### Session 02 (2026-05-29) — Inline note chunks, FAB cleanup
+
+**Goal:** Replace the floating green plus FAB quick-note sheet with per-chunk inline note inputs directly in the outline.
+
+**Solution:**
+- Refactored `SermonOutline` to split outline lines on `---`/`___` separator lines into chunks, rendering each as an `InlineNoteChunk`
+- `InlineNoteChunk` renders its lines then shows a full-width "Add Notes" secondary button; tapping it accordions open a 4-row textarea (⌘↵ to save). The `+` icon rotates 45° to an `×` and the label switches to "Remove Note" when open.
+- Removed `FloatingNoteButton` quick-note sheet (green plus FAB + slide-up modal) entirely — now just the green FileText FAB that opens the My Notes modal
+- Cleaned up dead `selectedText`/`onTextSelected` prop chain from `NotesClient` → `SermonOutline` → `InlineNoteChunk`
+
+**Files Modified:**
+- `components/notes/InlineNoteChunk.tsx` — new file
+- `components/notes/SermonOutline.tsx` — chunk splitting, delegates to `InlineNoteChunk`
+- `components/notes/FloatingNoteButton.tsx` — stripped to FileText FAB only, now green
+- `components/notes/NotesClient.tsx` — removed selectedText state, clearSelection, dead props
+
+**Status:** VERIFIED WORKING
 
 ### Session 01 (2026-05-15) — Webflow connection, My Notes modal, nav fix
 
