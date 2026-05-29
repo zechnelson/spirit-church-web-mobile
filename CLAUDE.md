@@ -35,6 +35,7 @@ spirit-church-web-mobile/
 | Events              | PLANNING | `docs/Development/events.md`           |
 | Sermon Notes        | ACTIVE   | `docs/Development/sermon-notes.md`     |
 | Church Links        | ACTIVE   | `docs/Development/church-links.md`     |
+| Navigation          | ACTIVE   | `docs/Development/navigation.md`       |
 | Auth / User Account | PLANNING | `docs/Development/auth.md`             |
 
 ## Documentation Table of Contents
@@ -80,6 +81,7 @@ spirit-church-web-mobile/
 | ---- | ----------- |
 | `sermon-notes.md` | Webflow CMS connection, Google Doc fetch, My Notes modal, Sunday time-gate plan |
 | `church-links.md` | Next Steps CMS collection, color palette, home page carousels |
+| `navigation.md`   | BottomNav component — tab bar, active states, hide-on-scroll |
 
 ### Debug/ — Troubleshooting
 

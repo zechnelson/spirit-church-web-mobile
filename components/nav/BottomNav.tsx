@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, BookOpen, CalendarDays, Heart } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 const tabs = [
   { href: "/", label: "Home", icon: Home },
@@ -13,10 +14,29 @@ const tabs = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y > lastScrollY.current && y > 60) {
+        setHidden(true);
+      } else if (y < lastScrollY.current) {
+        setHidden(false);
+      }
+      lastScrollY.current = y;
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-stretch border-t border-ink-300 bg-ink-100 will-change-transform"
+      className={`fixed bottom-0 left-0 right-0 z-50 flex h-16 items-stretch border-t border-ink-300 bg-ink-100 will-change-transform transition-transform duration-300 ease-in-out ${
+        hidden ? "translate-y-full" : "translate-y-0"
+      }`}
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="mx-auto flex w-full max-w-lg">
