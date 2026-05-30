@@ -49,9 +49,11 @@ describe("transformGroupForWebflow", () => {
     expect(fieldData["rock-id"]).toBe(42);
   });
 
-  it("calculates spots-available as capacity minus members", () => {
+  it("does not include capacity/spots fields not in Webflow schema", () => {
     const { fieldData } = client.transformGroupForWebflow(baseGroup);
-    expect(fieldData["spots-available"]).toBe(12);
+    expect(fieldData).not.toHaveProperty("spots-available");
+    expect(fieldData).not.toHaveProperty("capacity");
+    expect(fieldData).not.toHaveProperty("current-members");
   });
 
   it("maps topics array to Webflow item IDs", () => {

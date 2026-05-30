@@ -1,5 +1,5 @@
 import type { SyncGroup, WebflowItem } from "./types";
-import { calculateSpotsAvailable, log, logError } from "./utils";
+import { log, logError } from "./utils";
 
 type ReferenceMap = Record<string, string>;
 
@@ -135,11 +135,6 @@ export class WebflowClient {
   transformGroupForWebflow(
     group: SyncGroup
   ): { fieldData: Record<string, unknown> } {
-    const spotsAvailable = calculateSpotsAvailable(
-      group.capacity,
-      group.current_members
-    );
-
     const fieldData: Record<string, unknown> = {
       name: group.name,
       slug: group.slug,
@@ -147,15 +142,8 @@ export class WebflowClient {
 
     if (group.rock_id != null) fieldData["rock-id"] = group.rock_id;
     if (group.description) fieldData["description-2"] = group.description;
-    if (group.campus) fieldData["campus-2"] = group.campus;
-    if (group.group_type) fieldData["group-type-2"] = group.group_type;
-    if (group.meeting_time) fieldData["meeting-time"] = group.meeting_time;
     if (group.schedule_description)
       fieldData["schedule-description"] = group.schedule_description;
-    if (group.capacity != null) fieldData["capacity"] = group.capacity;
-    if (group.current_members != null)
-      fieldData["current-members"] = group.current_members;
-    if (spotsAvailable != null) fieldData["spots-available"] = spotsAvailable;
     if (group.registration_url)
       fieldData["registration-url"] = group.registration_url;
     if (group.is_active != null) fieldData["is-active"] = group.is_active;
@@ -173,7 +161,7 @@ export class WebflowClient {
     try {
       if (group.audience.length > 0 && this.audiencesMap) {
         const ids = this.mapValuesToIds(group.audience, this.audiencesMap);
-        if (ids.length > 0) fieldData["group-audiences"] = ids;
+        if (ids.length > 0) fieldData["audience"] = ids;
       }
     } catch (e) {
       log(`Warning: audience mapping failed for ${group.name}: ${(e as Error).message}`);

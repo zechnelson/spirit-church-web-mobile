@@ -41,3 +41,4 @@ supabase/.temp/
 # Misc
 .vercel
 .turbo
+.env*
