@@ -124,8 +124,12 @@ export class WebflowClient {
     }
 
     const data = await response.json();
-    log(`Retrieved ${data.items?.length ?? 0} existing Webflow items`);
-    return data.items ?? [];
+    const items: WebflowItem[] = data.items ?? [];
+    if (data.pagination?.total != null && data.pagination.total > items.length) {
+      log(`Warning: Webflow has ${data.pagination.total} total items but only ${items.length} were retrieved. Pagination not implemented — groups above the first 100 will be re-created instead of updated.`);
+    }
+    log(`Retrieved ${items.length} existing Webflow items`);
+    return items;
   }
 
   transformGroupForWebflow(
@@ -252,9 +256,13 @@ export class WebflowClient {
       }
 
       const data = await response.json();
-      itemIds.push(data.id);
-      created++;
-      log(`Created ${created}/${groups.length}: ${group.name}`);
+      if (data.id) {
+        itemIds.push(data.id);
+        created++;
+        log(`Created ${created}/${groups.length}: ${group.name}`);
+      } else {
+        logError(`Create succeeded but no id in response for ${group.name}`, new Error(JSON.stringify(data)));
+      }
 
       if (created < groups.length) {
         await new Promise((r) => setTimeout(r, 200));
@@ -311,12 +319,23 @@ export class WebflowClient {
   async publishSite(): Promise<void> {
     log("Publishing Webflow site...");
 
+    // Fetch site info to get custom domains
+    const siteResponse = await fetch(`${this.baseUrl}/sites/${this.siteId}`, {
+      headers: { Authorization: `Bearer ${this.apiToken}`, accept: "application/json" },
+    });
+
+    let customDomains: string[] = [];
+    if (siteResponse.ok) {
+      const siteData = await siteResponse.json();
+      customDomains = siteData.customDomains?.map((d: { url: string }) => d.url) ?? [];
+    }
+
     const response = await fetch(
       `${this.baseUrl}/sites/${this.siteId}/publish`,
       {
         method: "POST",
         headers: this.authHeaders,
-        body: JSON.stringify({}),
+        body: JSON.stringify({ customDomains }),
       }
     );
 
