@@ -5,7 +5,6 @@ import {
   parseMultiSelectAttribute,
   getImageUrl,
   log,
-  logError,
 } from "./utils";
 
 export class RockRMSClient {
