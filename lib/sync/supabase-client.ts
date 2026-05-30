@@ -26,7 +26,7 @@ export class SupabaseClient {
       updated_at: new Date().toISOString(),
     }));
 
-    const response = await fetch(`${this.url}/rest/v1/groups`, {
+    const response = await fetch(`${this.url}/rest/v1/groups?on_conflict=rock_id`, {
       method: "POST",
       headers: {
         ...this.headers,

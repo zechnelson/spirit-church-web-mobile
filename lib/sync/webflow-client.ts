@@ -297,20 +297,25 @@ export class WebflowClient {
 
     log(`Publishing ${itemIds.length} items...`);
 
-    const response = await fetch(
-      `${this.baseUrl}/collections/${this.collectionId}/items/publish`,
-      {
-        method: "POST",
-        headers: this.authHeaders,
-        body: JSON.stringify({ itemIds }),
-      }
-    );
+    const CHUNK_SIZE = 100;
+    for (let i = 0; i < itemIds.length; i += CHUNK_SIZE) {
+      const chunk = itemIds.slice(i, i + CHUNK_SIZE);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to publish items: ${response.status} - ${errorText}`
+      const response = await fetch(
+        `${this.baseUrl}/collections/${this.collectionId}/items/publish`,
+        {
+          method: "POST",
+          headers: this.authHeaders,
+          body: JSON.stringify({ itemIds: chunk }),
+        }
       );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to publish items (chunk ${Math.floor(i / CHUNK_SIZE) + 1}): ${response.status} - ${errorText}`
+        );
+      }
     }
 
     log(`Published ${itemIds.length} items`);

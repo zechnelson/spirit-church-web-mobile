@@ -55,10 +55,14 @@ export async function fullSync(env: SyncEnv): Promise<SyncStats> {
     const updatedIds: string[] = [];
     let updated = 0;
     for (const { item, group } of toUpdate) {
-      await webflow.updateItem(item.id, group);
-      updatedIds.push(item.id);
-      updated++;
-      if (updated % 10 === 0) log(`Updated ${updated}/${toUpdate.length}`);
+      try {
+        await webflow.updateItem(item.id, group);
+        updatedIds.push(item.id);
+        updated++;
+        if (updated % 10 === 0) log(`Updated ${updated}/${toUpdate.length}`);
+      } catch (updateError) {
+        logError(`Failed to update item ${item.id} (${group.name})`, updateError as Error);
+      }
       if (updated < toUpdate.length)
         await new Promise((r) => setTimeout(r, 200));
     }
@@ -67,8 +71,10 @@ export async function fullSync(env: SyncEnv): Promise<SyncStats> {
     log("--- Stage 3: Publish ---");
     const allAffectedIds = [...createdIds, ...updatedIds];
 
+    let published = 0;
     try {
       await webflow.publishItems(allAffectedIds);
+      published = allAffectedIds.length;
       await webflow.publishSite();
     } catch (publishError) {
       logError(
@@ -95,7 +101,7 @@ export async function fullSync(env: SyncEnv): Promise<SyncStats> {
         processed: supabaseGroups.length,
         created,
         updated,
-        published: allAffectedIds.length,
+        published,
         status: "success",
       },
       duration: duration(),
