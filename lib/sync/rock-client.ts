@@ -92,6 +92,7 @@ export class RockRMSClient {
       registration_url: `https://rms.spiritchurch.co/GroupRegistration?GroupId=${rockGroup.Id}`,
       is_active: rockGroup.IsActive,
       is_public: rockGroup.IsPublic,
+      is_archived: rockGroup.IsArchived ?? false,
       topics,
       audience,
       life_stages: lifeStages,

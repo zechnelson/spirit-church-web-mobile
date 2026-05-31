@@ -101,4 +101,42 @@ describe("transformGroup", () => {
     };
     expect(client.transformGroup(raw).registration_url).toContain("GroupId=99");
   });
+
+  it("maps IsArchived=true to is_archived=true", () => {
+    const raw = {
+      Id: 1,
+      Name: "Archived Group",
+      Description: "",
+      GroupTypeId: 25,
+      IsActive: false,
+      IsPublic: false,
+      IsArchived: true,
+    };
+    expect(client.transformGroup(raw).is_archived).toBe(true);
+  });
+
+  it("maps IsArchived=false to is_archived=false", () => {
+    const raw = {
+      Id: 1,
+      Name: "Active Group",
+      Description: "",
+      GroupTypeId: 25,
+      IsActive: true,
+      IsPublic: true,
+      IsArchived: false,
+    };
+    expect(client.transformGroup(raw).is_archived).toBe(false);
+  });
+
+  it("defaults is_archived to false when IsArchived is absent", () => {
+    const raw = {
+      Id: 1,
+      Name: "No Archive Field",
+      Description: "",
+      GroupTypeId: 25,
+      IsActive: true,
+      IsPublic: true,
+    };
+    expect(client.transformGroup(raw).is_archived).toBe(false);
+  });
 });

@@ -12,6 +12,7 @@ export interface RockRawGroup {
   CampusId?: number;
   IsActive: boolean;
   IsPublic: boolean;
+  IsArchived?: boolean;
   GroupCapacity?: number;
   ActiveMemberCount?: number;
   Campus?: { Name: string };
@@ -49,6 +50,7 @@ export interface SyncGroup {
   registration_url: string;
   is_active: boolean;
   is_public: boolean;
+  is_archived: boolean;
   topics: string[];
   audience: string[];
   life_stages: string[];

@@ -21,6 +21,7 @@ const baseGroup: SyncGroup = {
   registration_url: "https://rms.spiritchurch.co/GroupRegistration?GroupId=42",
   is_active: true,
   is_public: true,
+  is_archived: false,
   topics: ["Prayer"],
   audience: ["Men"],
   life_stages: ["Young Adults"],
