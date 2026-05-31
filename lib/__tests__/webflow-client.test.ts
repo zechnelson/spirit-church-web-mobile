@@ -90,21 +90,21 @@ describe("transformGroupForWebflow", () => {
     expect(fieldData).not.toHaveProperty("meeting-time");
   });
 
-  it("includes group-image URL when group_image is set", () => {
+  it("includes group-image-3 URL when group_image is set", () => {
     const group: SyncGroup = {
       ...baseGroup,
       group_image: "https://rms.spiritchurch.co/GetImage.ashx?guid=abc123",
     };
     const { fieldData } = client.transformGroupForWebflow(group);
-    expect(fieldData["group-image"]).toBe(
+    expect(fieldData["group-image-3"]).toBe(
       "https://rms.spiritchurch.co/GetImage.ashx?guid=abc123"
     );
   });
 
-  it("omits group-image when group_image is null", () => {
+  it("omits group-image-3 when group_image is null", () => {
     // baseGroup.group_image is already null
     const { fieldData } = client.transformGroupForWebflow(baseGroup);
-    expect(fieldData).not.toHaveProperty("group-image");
+    expect(fieldData).not.toHaveProperty("group-image-3");
   });
 });
 

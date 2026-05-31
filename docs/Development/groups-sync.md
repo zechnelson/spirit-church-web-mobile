@@ -57,9 +57,11 @@ Valid field slugs (as returned by the Webflow v2 API):
 | `city` | Ref | `group.city` → cityMap |
 | `childcare-available` | Ref | `group.childcare_provided` → childcareMap |
 | `kids-welcome` | Ref | `group.kids_welcome` → kidsWelcomeMap |
-| `group-image` | Image | `group.group_image` (URL string) |
+| `group-image-3` | PlainText | `group.group_image` (Rock RMS URL string — publicly accessible) |
 
-**Fields NOT in schema** (do not send in PATCH/POST): `campus-2`, `group-type-2`, `meeting-time`, `capacity`, `current-members`, `spots-available`.
+> **Note:** `group-image` (Webflow Image type) exists in the collection but is always null — Webflow cannot fetch the Rock image URL during CMS item creation. `group-image-3` is a PlainText field that stores the raw URL. The app reads `group-image-3` directly and Next.js serves it via the `rms.spiritchurch.co` remote pattern.
+
+**Fields NOT in schema** (do not send in PATCH/POST): `campus-2`, `group-type-2`, `meeting-time`, `capacity`, `current-members`, `spots-available`, `group-image` (Image type — always null, use `group-image-3` instead).
 
 ## Reference Collections
 
