@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "cdn.prod.website-files.com" },
       { protocol: "https", hostname: "**.webflow.com" },
       { protocol: "https", hostname: "**.webflowcdn.com" },
+      // Rock RMS group images (public GetImage.ashx endpoint)
+      { protocol: "https", hostname: "rms.spiritchurch.co" },
       // Google Docs / Drive thumbnails (if needed)
       { protocol: "https", hostname: "**.googleusercontent.com" },
     ],

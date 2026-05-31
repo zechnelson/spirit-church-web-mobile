@@ -192,8 +192,8 @@ export async function getGroups(): Promise<AppGroup[]> {
       id: item.id,
       title: item.fieldData.name as string,
       category: "Small Group",
-      imageSrc: (item.fieldData["group-image"] as WfImage | null)?.url,
-      href: (item.fieldData["registration-url"] as string | null) ?? "#",
+      imageSrc: (item.fieldData["group-image-3"] as string | null) ?? undefined,
+      href: `https://www.spiritchurch.co/groups/${item.fieldData.slug as string}`,
     }));
 }
 
