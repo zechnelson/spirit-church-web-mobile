@@ -74,6 +74,27 @@ Run `npm test` to verify all 14 unit tests pass.
 
 ## Recent Sessions
 
+### Session 05 (2026-05-31) — GroupCard layout redesign
+
+**Goal:** Change GroupCard to match EventCard layout; show name, location, and meeting schedule.
+
+**Solution:**
+- Added `location` PlainText field to Webflow Groups collection (manual, via Webflow UI)
+- Updated `transformGroupForWebflow` in `lib/sync/webflow-client.ts` to write `group.city` to `location`
+- Updated `AppGroup` interface: removed `category`, added `location?` and `schedule?`
+- Updated `getGroups()` to map `location` and `schedule-description` from Webflow
+- Rewrote `GroupCard` to top-image + stacked-text layout matching `EventCard`
+
+**Files Modified:**
+- `lib/sync/webflow-client.ts` — added `location` field write
+- `lib/__tests__/webflow-client.test.ts` — 2 new tests for `location` field
+- `lib/webflow.ts` — updated `AppGroup`; updated `getGroups()` mapping
+- `components/home/GroupCard.tsx` — full layout rewrite
+
+**Status:** VERIFIED WORKING (pending Webflow field addition + sync trigger)
+
+---
+
 ### Session 04 (2026-05-30) — Group images in home carousel
 
 **Goal:** Show real group images in the "Join a group" carousel instead of a placeholder.
