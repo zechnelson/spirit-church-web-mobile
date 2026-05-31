@@ -171,7 +171,8 @@ export async function getLatestMessage(): Promise<AppMessage | null> {
 export interface AppGroup {
   id: string;
   title: string;
-  category: string;
+  location?: string;
+  schedule?: string;
   imageSrc?: string;
   href: string;
 }
@@ -191,7 +192,8 @@ export async function getGroups(): Promise<AppGroup[]> {
     .map((item) => ({
       id: item.id,
       title: item.fieldData.name as string,
-      category: "Small Group",
+      location: (item.fieldData["location"] as string | null) ?? undefined,
+      schedule: (item.fieldData["schedule-description"] as string | null) ?? undefined,
       imageSrc: (item.fieldData["group-image-3"] as string | null) ?? undefined,
       href: `https://www.spiritchurch.co/groups/${item.fieldData.slug as string}`,
     }));

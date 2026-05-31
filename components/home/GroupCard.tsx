@@ -2,7 +2,7 @@ import Image from "next/image";
 
 interface GroupCardProps {
   title: string;
-  category: string;
+  category?: string;
   imageSrc?: string;
   href?: string;
 }
@@ -34,9 +34,11 @@ export function GroupCard({
         <p className="line-clamp-2 text-[12px] font-semibold leading-snug text-ink-900">
           {title}
         </p>
-        <span className="w-fit rounded-full bg-ink-200 px-2 py-0.5 text-[10px] font-medium text-ink-800">
-          {category}
-        </span>
+        {category && (
+          <span className="w-fit rounded-full bg-ink-200 px-2 py-0.5 text-[10px] font-medium text-ink-800">
+            {category}
+          </span>
+        )}
       </div>
     </a>
   );
