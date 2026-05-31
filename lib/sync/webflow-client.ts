@@ -148,6 +148,7 @@ export class WebflowClient {
       fieldData["registration-url"] = group.registration_url;
     if (group.is_active != null) fieldData["is-active"] = group.is_active;
     if (group.is_public != null) fieldData["is-public-2"] = group.is_public;
+    if (group.group_image) fieldData["group-image"] = group.group_image;
 
     try {
       if (group.topics.length > 0 && this.topicsMap) {

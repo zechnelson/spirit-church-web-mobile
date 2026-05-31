@@ -57,6 +57,7 @@ Valid field slugs (as returned by the Webflow v2 API):
 | `city` | Ref | `group.city` → cityMap |
 | `childcare-available` | Ref | `group.childcare_provided` → childcareMap |
 | `kids-welcome` | Ref | `group.kids_welcome` → kidsWelcomeMap |
+| `group-image` | Image | `group.group_image` (URL string) |
 
 **Fields NOT in schema** (do not send in PATCH/POST): `campus-2`, `group-type-2`, `meeting-time`, `capacity`, `current-members`, `spots-available`.
 
