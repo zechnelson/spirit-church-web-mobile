@@ -109,11 +109,31 @@ Expected response:
 - **Cron:** Active — fires every 6 hours via `vercel.json`
 - **Sync verified working:** 2026-05-30 — `created: 9, updated: 27, published: 36`
 - **Publishing:** Fixed — items are published immediately after create/update
-- **Cloudflare Worker:** Pending decommission (still running in parallel; can be removed once cron is confirmed stable)
+- **Cloudflare Worker:** Decommissioned (2026-05-30) — Vercel cron is the sole sync mechanism
+- **Deletion:** Active — groups archived in Rock (`IsArchived=true`) are deleted from Webflow and Supabase on next sync; Webflow confirmed to remove deleted items from live site automatically (no `publishSite` call needed after delete)
 
 ---
 
 ## Recent Sessions
+
+### Session 03 (2026-05-30) — Feature: Delete archived groups from Webflow
+
+**Goal:** When a group is archived in Rock RMS (`IsArchived=true`), automatically delete it from Webflow CMS and Supabase on the next sync run.
+
+**Solution:** Added a delete path to the sync pipeline. Rock groups are split into `activeGroups` and `toDelete` (is_archived=true) at the start of `fullSync`. Active groups follow the existing create/update path. Archived groups are removed from Supabase via `deleteGroups()` and from Webflow via `deleteItems()`, reusing the `existingMap` already built in Stage 2 with no extra API calls.
+
+**Verified:** Webflow removes deleted CMS items from the live site automatically — no `publishSite` call needed after deletions.
+
+**Files Modified:**
+- `lib/sync/types.ts` — added `IsArchived` to `RockRawGroup`, `is_archived` to `SyncGroup`, `deleted` to `SyncStats`
+- `lib/sync/rock-client.ts` — maps `IsArchived ?? false` → `is_archived` in `transformGroup`
+- `lib/sync/webflow-client.ts` — added `deleteItem(itemId)` and `deleteItems(itemIds[])`
+- `lib/sync/supabase-client.ts` — added `deleteGroups(rockIds[])`
+- `lib/sync/index.ts` — wired delete path into `fullSync`
+- `lib/__tests__/rock-client.test.ts` — 3 new tests for `is_archived` mapping
+- `lib/__tests__/webflow-client.test.ts` — updated `baseGroup` fixture; 5 new tests for delete methods
+
+---
 
 ### Session 02 (2026-05-30) — Fix: Webflow update/publish returning 0
 
