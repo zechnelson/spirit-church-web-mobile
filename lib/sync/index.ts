@@ -58,7 +58,7 @@ export async function fullSync(env: SyncEnv): Promise<SyncStats> {
       .filter((g) => existingMap.has(g.rock_id))
       .map((g) => ({ item: existingMap.get(g.rock_id)!, group: g }));
 
-    log(`${toCreate.length} to create, ${toUpdate.length} to update`);
+    log(`${toCreate.length} to create, ${toUpdate.length} to update, ${toDelete.length} to delete from Webflow`);
 
     const { created, itemIds: createdIds } = await webflow.createItems(toCreate);
 
@@ -103,6 +103,7 @@ export async function fullSync(env: SyncEnv): Promise<SyncStats> {
       log("Publish manually via Webflow dashboard or wait for next sync");
     }
 
+    // deleted count not logged to sync_logs — sync_logs.groups_deleted column does not exist yet
     await supabase.logSync("supabase_to_webflow", "success", {
       processed: supabaseGroups.length,
       created,
