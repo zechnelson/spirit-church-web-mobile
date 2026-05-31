@@ -149,6 +149,7 @@ export class WebflowClient {
     if (group.is_active != null) fieldData["is-active"] = group.is_active;
     if (group.is_public != null) fieldData["is-public-2"] = group.is_public;
     if (group.group_image) fieldData["group-image-3"] = group.group_image;
+    if (group.city) fieldData["location"] = group.city;
 
     try {
       if (group.topics.length > 0 && this.topicsMap) {
