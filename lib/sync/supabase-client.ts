@@ -62,6 +62,35 @@ export class SupabaseClient {
     return groups;
   }
 
+  async deleteGroups(rockIds: number[]): Promise<number> {
+    if (rockIds.length === 0) return 0;
+
+    log(`Deleting ${rockIds.length} groups from Supabase...`);
+
+    const idList = rockIds.join(",");
+    const response = await fetch(
+      `${this.url}/rest/v1/groups?rock_id=in.(${idList})`,
+      {
+        method: "DELETE",
+        headers: {
+          ...this.headers,
+          Prefer: "return=representation",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Supabase delete failed: ${response.status} - ${errorText}`
+      );
+    }
+
+    const result: SyncGroup[] = await response.json();
+    log(`Deleted ${result.length} groups from Supabase`);
+    return result.length;
+  }
+
   async logSync(
     syncType: string,
     status: "success" | "failed",
