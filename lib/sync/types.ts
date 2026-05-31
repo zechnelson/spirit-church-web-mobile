@@ -84,6 +84,7 @@ export interface SyncStats {
     processed: number;
     created: number;
     updated: number;
+    deleted: number;
     published: number;
     status: string;
   };

@@ -25,14 +25,24 @@ export async function fullSync(env: SyncEnv): Promise<SyncStats> {
     // Stage 1: Rock RMS → Supabase
     log("--- Stage 1: Rock RMS → Supabase ---");
     const rockGroups = await rock.fetchGroups();
-    await supabase.upsertGroups(rockGroups);
+
+    const toDelete = rockGroups.filter((g) => g.is_archived);
+    const activeGroups = rockGroups.filter((g) => !g.is_archived);
+    log(
+      `${activeGroups.length} active groups, ${toDelete.length} archived groups to delete`
+    );
+
+    await supabase.upsertGroups(activeGroups);
+    if (toDelete.length > 0) {
+      await supabase.deleteGroups(toDelete.map((g) => g.rock_id));
+    }
     await supabase.logSync("rock_to_supabase", "success", {
-      processed: rockGroups.length,
+      processed: activeGroups.length,
       startedAt,
       duration: duration(),
     });
 
-    // Stage 2: Supabase → Webflow (create + update)
+    // Stage 2: Supabase → Webflow (create + update + delete)
     log("--- Stage 2: Supabase → Webflow ---");
     await webflow.initializeReferenceMaps();
 
@@ -61,13 +71,22 @@ export async function fullSync(env: SyncEnv): Promise<SyncStats> {
         updated++;
         if (updated % 10 === 0) log(`Updated ${updated}/${toUpdate.length}`);
       } catch (updateError) {
-        logError(`Failed to update item ${item.id} (${group.name})`, updateError as Error);
+        logError(
+          `Failed to update item ${item.id} (${group.name})`,
+          updateError as Error
+        );
       }
       if (updated < toUpdate.length)
         await new Promise((r) => setTimeout(r, 200));
     }
 
-    // Stage 3: Publish all affected items
+    // Delete archived groups from Webflow
+    const toDeleteWebflowIds = toDelete
+      .map((g) => existingMap.get(g.rock_id)?.id)
+      .filter((id): id is string => id !== undefined);
+    const deleted = await webflow.deleteItems(toDeleteWebflowIds);
+
+    // Stage 3: Publish all created/updated items
     log("--- Stage 3: Publish ---");
     const allAffectedIds = [...createdIds, ...updatedIds];
 
@@ -96,11 +115,12 @@ export async function fullSync(env: SyncEnv): Promise<SyncStats> {
 
     return {
       startedAt,
-      rockToSupabase: { processed: rockGroups.length, status: "success" },
+      rockToSupabase: { processed: activeGroups.length, status: "success" },
       supabaseToWebflow: {
         processed: supabaseGroups.length,
         created,
         updated,
+        deleted,
         published,
         status: "success",
       },
