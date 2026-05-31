@@ -112,10 +112,26 @@ Expected response:
 - **Publishing:** Fixed — items are published immediately after create/update
 - **Cloudflare Worker:** Decommissioned (2026-05-30) — Vercel cron is the sole sync mechanism
 - **Deletion:** Active — groups archived in Rock (`IsArchived=true`) are deleted from Webflow and Supabase on next sync; Webflow confirmed to remove deleted items from live site automatically (no `publishSite` call needed after delete)
+- **Group images:** Synced — `group-image` field populated in Webflow from Rock RMS `GroupImageThumbnail` attribute
 
 ---
 
 ## Recent Sessions
+
+### Session 04 (2026-05-30) — Feature: Sync group-image to Webflow
+
+**Goal:** Populate the `group-image` Webflow CMS field with the Rock RMS image URL so group images appear in the mobile home carousel.
+
+**Solution:** Added `if (group.group_image) fieldData["group-image"] = group.group_image;` to `transformGroupForWebflow` in `webflow-client.ts`. Webflow Image fields accept a plain URL string and handle fetch/cache server-side.
+
+**Files Modified:**
+- `lib/sync/webflow-client.ts` — added `group-image` to `transformGroupForWebflow`
+- `lib/__tests__/webflow-client.test.ts` — 2 new tests (image present, image null)
+- `docs/Development/groups-sync.md` — added `group-image` row to Webflow field table
+
+**Status:** VERIFIED WORKING
+
+---
 
 ### Session 03 (2026-05-30) — Feature: Delete archived groups from Webflow
 
