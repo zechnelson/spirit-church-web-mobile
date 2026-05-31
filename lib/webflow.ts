@@ -172,6 +172,7 @@ export interface AppGroup {
   id: string;
   title: string;
   category: string;
+  imageSrc?: string;
   href: string;
 }
 
@@ -191,6 +192,7 @@ export async function getGroups(): Promise<AppGroup[]> {
       id: item.id,
       title: item.fieldData.name as string,
       category: "Small Group",
+      imageSrc: (item.fieldData["group-image"] as WfImage | null)?.url,
       href: (item.fieldData["registration-url"] as string | null) ?? "#",
     }));
 }
