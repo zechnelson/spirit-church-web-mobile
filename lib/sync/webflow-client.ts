@@ -341,4 +341,43 @@ export class WebflowClient {
 
     log("Site published");
   }
+
+  async deleteItem(itemId: string): Promise<void> {
+    const response = await fetch(
+      `${this.baseUrl}/collections/${this.collectionId}/items/${itemId}`,
+      {
+        method: "DELETE",
+        headers: this.authHeaders,
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to delete item ${itemId}: ${response.status} - ${errorText}`
+      );
+    }
+  }
+
+  async deleteItems(itemIds: string[]): Promise<number> {
+    if (itemIds.length === 0) return 0;
+
+    log(`Deleting ${itemIds.length} items from Webflow...`);
+
+    let deleted = 0;
+    for (let i = 0; i < itemIds.length; i++) {
+      try {
+        await this.deleteItem(itemIds[i]);
+        deleted++;
+      } catch (e) {
+        logError(`Failed to delete item ${itemIds[i]}`, e as Error);
+      }
+      if (i < itemIds.length - 1) {
+        await new Promise((r) => setTimeout(r, 200));
+      }
+    }
+
+    log(`Deleted ${deleted} items`);
+    return deleted;
+  }
 }

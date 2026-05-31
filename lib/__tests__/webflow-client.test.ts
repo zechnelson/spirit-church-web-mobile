@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { WebflowClient } from "../sync/webflow-client";
 import type { SyncGroup } from "../sync/types";
 
@@ -104,5 +104,77 @@ describe("mapValuesToIds", () => {
 
   it("returns empty array for empty input", () => {
     expect(client.mapValuesToIds([], client.topicsMap!)).toEqual([]);
+  });
+});
+
+describe("deleteItem", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("calls DELETE on the correct endpoint", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", mockFetch);
+
+    await client.deleteItem("item-123");
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.webflow.com/v2/collections/collection-id/items/item-123",
+      expect.objectContaining({ method: "DELETE" })
+    );
+  });
+
+  it("throws when response is not ok", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        text: async () => "Not Found",
+      })
+    );
+
+    await expect(client.deleteItem("item-999")).rejects.toThrow("404");
+  });
+});
+
+describe("deleteItems", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns 0 for empty input without calling fetch", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const count = await client.deleteItems([]);
+    expect(count).toBe(0);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("returns count of successfully deleted items", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    );
+
+    const count = await client.deleteItems(["id-1", "id-2", "id-3"]);
+    expect(count).toBe(3);
+  });
+
+  it("skips failed deletes and returns count of successes only", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200 })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => "Server Error",
+      })
+      .mockResolvedValueOnce({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const count = await client.deleteItems(["id-1", "id-2", "id-3"]);
+    expect(count).toBe(2);
   });
 });
