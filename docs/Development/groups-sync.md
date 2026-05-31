@@ -58,7 +58,6 @@ Valid field slugs (as returned by the Webflow v2 API):
 | `childcare-available` | Ref | `group.childcare_provided` → childcareMap |
 | `kids-welcome` | Ref | `group.kids_welcome` → kidsWelcomeMap |
 | `group-image-3` | PlainText | `group.group_image` (Rock RMS URL string — publicly accessible) |
-| `location` | PlainText | `group.city` (plain text mirror of the `city` Ref field) |
 
 > **Note:** `group-image` (Webflow Image type) exists in the collection but is always null — Webflow cannot fetch the Rock image URL during CMS item creation. `group-image-3` is a PlainText field that stores the raw URL. The app reads `group-image-3` directly and Next.js serves it via the `rms.spiritchurch.co` remote pattern.
 

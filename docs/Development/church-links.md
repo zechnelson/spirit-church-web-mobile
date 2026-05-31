@@ -79,19 +79,16 @@ Run `npm test` to verify all 14 unit tests pass.
 **Goal:** Change GroupCard to match EventCard layout; show name, location, and meeting schedule.
 
 **Solution:**
-- Added `location` PlainText field to Webflow Groups collection (manual, via Webflow UI)
-- Updated `transformGroupForWebflow` in `lib/sync/webflow-client.ts` to write `group.city` to `location`
+- `getGroups()` now fetches the Cities collection in parallel and resolves the `city` Ref field to a name string — no new Webflow field needed, no sync changes
 - Updated `AppGroup` interface: removed `category`, added `location?` and `schedule?`
-- Updated `getGroups()` to map `location` and `schedule-description` from Webflow
+- `location` resolved by looking up `item.fieldData["city"]` ID in the cities map; `schedule` reads the existing `schedule-description` PlainText field
 - Rewrote `GroupCard` to top-image + stacked-text layout matching `EventCard`
 
 **Files Modified:**
-- `lib/sync/webflow-client.ts` — added `location` field write
-- `lib/__tests__/webflow-client.test.ts` — 2 new tests for `location` field
-- `lib/webflow.ts` — updated `AppGroup`; updated `getGroups()` mapping
+- `lib/webflow.ts` — updated `AppGroup`; updated `getGroups()` to resolve city Ref via parallel Cities fetch
 - `components/home/GroupCard.tsx` — full layout rewrite
 
-**Status:** VERIFIED WORKING (pending Webflow field addition + sync trigger)
+**Status:** VERIFIED WORKING
 
 ---
 

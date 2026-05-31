@@ -9,6 +9,7 @@ const COLLECTIONS = {
   speakers: "68ae1c452c9ac726c7a74691",
   headerCards: "6a068822d95ce2e41e516c89",
   groups: "694eff6ac57ffe6994797761",
+  cities: "6970957a11505bf2aa488045",
   nextSteps: "6a06a5f50e11665321904497",
 } as const;
 
@@ -178,10 +179,16 @@ export interface AppGroup {
 }
 
 export async function getGroups(): Promise<AppGroup[]> {
-  const res = await wfFetch<WfListResponse>(
-    `/collections/${COLLECTIONS.groups}/items?limit=100`
+  const [groupsRes, citiesRes] = await Promise.all([
+    wfFetch<WfListResponse>(`/collections/${COLLECTIONS.groups}/items?limit=100`),
+    wfFetch<WfListResponse>(`/collections/${COLLECTIONS.cities}/items?limit=100`),
+  ]);
+
+  const cityMap = Object.fromEntries(
+    citiesRes.items.map((c) => [c.id, c.fieldData.name as string])
   );
-  return res.items
+
+  return groupsRes.items
     .filter(
       (item) =>
         !item.isArchived &&
@@ -189,14 +196,17 @@ export async function getGroups(): Promise<AppGroup[]> {
         item.fieldData["is-active"] !== false &&
         item.fieldData["is-public-2"] !== false
     )
-    .map((item) => ({
-      id: item.id,
-      title: item.fieldData.name as string,
-      location: (item.fieldData["location"] as string | null) ?? undefined,
-      schedule: (item.fieldData["schedule-description"] as string | null) ?? undefined,
-      imageSrc: (item.fieldData["group-image-3"] as string | null) ?? undefined,
-      href: `https://www.spiritchurch.co/groups/${item.fieldData.slug as string}`,
-    }));
+    .map((item) => {
+      const cityId = item.fieldData["city"] as string | null;
+      return {
+        id: item.id,
+        title: item.fieldData.name as string,
+        location: cityId ? cityMap[cityId] : undefined,
+        schedule: (item.fieldData["schedule-description"] as string | null) ?? undefined,
+        imageSrc: (item.fieldData["group-image-3"] as string | null) ?? undefined,
+        href: `https://www.spiritchurch.co/groups/${item.fieldData.slug as string}`,
+      };
+    });
 }
 
 export interface AppNextStep {

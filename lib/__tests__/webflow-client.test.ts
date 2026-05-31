@@ -107,16 +107,6 @@ describe("transformGroupForWebflow", () => {
     expect(fieldData).not.toHaveProperty("group-image-3");
   });
 
-  it("writes city name to location PlainText field", () => {
-    const { fieldData } = client.transformGroupForWebflow(baseGroup);
-    expect(fieldData["location"]).toBe("Phoenix");
-  });
-
-  it("omits location field when city is null", () => {
-    const group: SyncGroup = { ...baseGroup, city: null };
-    const { fieldData } = client.transformGroupForWebflow(group);
-    expect(fieldData).not.toHaveProperty("location");
-  });
 });
 
 describe("mapValuesToIds", () => {
