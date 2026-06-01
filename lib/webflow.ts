@@ -113,7 +113,7 @@ export async function getEvents(): Promise<AppEvent[]> {
           "",
         category: categoryIds?.[0] ? (categoryMap.get(categoryIds[0]) ?? "") : "",
         imageSrc: (fd["thumbnail-image"] as WfImage | null)?.url,
-        href: (fd["event-button-link"] as string | null) ?? "#",
+        href: `https://www.spiritchurch.co/events/${item.fieldData.slug as string}`,
       };
     });
 }

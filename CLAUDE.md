@@ -32,7 +32,7 @@ spirit-church-web-mobile/
 
 | System              | Status   | Doc                                    |
 | ------------------- | -------- | -------------------------------------- |
-| Events              | PLANNING | `docs/Development/events.md`           |
+| Events              | ACTIVE   | `docs/Development/events.md`           |
 | Sermon Notes        | ACTIVE   | `docs/Development/sermon-notes.md`     |
 | Church Links        | ACTIVE   | `docs/Development/church-links.md`     |
 | Navigation          | ACTIVE   | `docs/Development/navigation.md`       |
@@ -80,6 +80,7 @@ spirit-church-web-mobile/
 
 | File | Description |
 | ---- | ----------- |
+| `events.md`       | Events carousel on home screen, Webflow CMS fetch, slug-based linking |
 | `sermon-notes.md` | Webflow CMS connection, Google Doc fetch, My Notes modal, Sunday time-gate plan |
 | `church-links.md` | Next Steps CMS collection, color palette, home page carousels, time-gated hero banner |
 | `navigation.md`   | BottomNav component — tab bar, active states, hide-on-scroll |
