@@ -32,6 +32,17 @@ export default async function HomePage() {
         fallback={hero ?? { text: "Welcome to Spirit Church", href: "#" }}
       />
 
+      <CarouselSection title="Your next step">
+        {nextSteps.map((step, i) => (
+          <NextStepCard
+            key={step.id}
+            title={step.title}
+            href={step.href}
+            color={NEXT_STEP_COLORS[i % NEXT_STEP_COLORS.length]}
+          />
+        ))}
+      </CarouselSection>
+
       <CarouselSection title="Upcoming events">
         {events.slice(0, 8).map((event) => (
           <EventCard
@@ -45,17 +56,6 @@ export default async function HomePage() {
           />
         ))}
         <ViewAllCard href="https://www.spiritchurch.co/events" />
-      </CarouselSection>
-
-      <CarouselSection title="Your next step">
-        {nextSteps.map((step, i) => (
-          <NextStepCard
-            key={step.id}
-            title={step.title}
-            href={step.href}
-            color={NEXT_STEP_COLORS[i % NEXT_STEP_COLORS.length]}
-          />
-        ))}
       </CarouselSection>
 
       {groups.length > 0 ? (

@@ -105,21 +105,18 @@ Run `npm test` to verify all 14 unit tests pass.
 
 ---
 
-### Session 01 (2026-05-15) — Next Steps CMS connection
+### Session 06 (2026-06-04) — Home screen section reorder
 
-**Goal:** Replace hardcoded Next Steps cards with Webflow CMS-managed items.
+**Goal:** Move "Your next step" carousel above "Upcoming events" on the home screen.
 
-**Solution:**
-- Created "Next Steps" collection in Webflow with `Name`, `Link`, and `Sort Order` (integer) fields
-- Added `getNextSteps()` to `lib/webflow.ts` — fetches, filters drafts/archived, sorts by `sort-order`
-- Updated `page.tsx` to fetch next steps in parallel with other CMS calls
-- Color palette set to brand-900, brand-500, brand-350, warm-300 cycling by index
+**Solution:** Swapped the two `<CarouselSection>` blocks in `app/(tabs)/page.tsx`. No data or component changes needed.
 
 **Files Modified:**
-- `lib/webflow.ts` — added `nextSteps` collection ID, `AppNextStep` interface, `getNextSteps()`
-- `app/(tabs)/page.tsx` — replaced hardcoded array with CMS fetch, updated color palette
+- `app/(tabs)/page.tsx` — moved "Your next step" section above "Upcoming events"
 
-**Status:** VERIFIED WORKING (4 items live in Webflow)
+**Status:** VERIFIED WORKING (confirmed via browser DOM snapshot)
+
+---
 
 ### Session 02 (2026-05-29) — HeroBanner share button UI polish
 
