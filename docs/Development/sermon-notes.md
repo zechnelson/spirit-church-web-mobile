@@ -10,10 +10,10 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 | ---- | ------- |
 | `app/(tabs)/notes/page.tsx` | Server page — fetches message from Webflow, renders SermonHeader + NotesClient |
 | `lib/webflow.ts` → `getLatestMessage()` | Fetches latest message item, resolves speaker, pulls Google Doc notes |
-| `components/notes/NotesClient.tsx` | Client shell — owns `notes` state, wires all child components |
+| `components/notes/NotesClient.tsx` | Client shell — owns `freeNotes` + `chunkNotes` state (sessionStorage-backed), wires all child components |
 | `components/notes/SermonOutline.tsx` | Renders Google Doc lines; handles text selection → quick note |
 | `components/notes/NoteEditor.tsx` | My Notes textarea + include-sermon toggle + copy/share actions |
-| `components/notes/FloatingNoteButton.tsx` | Green plus FAB (quick note sheet) + white FileText FAB (My Notes modal) |
+| `components/notes/FloatingNoteButton.tsx` | Green FileText FAB — opens Notes modal |
 | `components/notes/MyNotesModal.tsx` | 3/4-screen bottom sheet modal wrapping NoteEditor |
 | `components/notes/SermonHeader.tsx` | Title, speaker, date display at top of page |
 | `components/notes/InlineNoteChunk.tsx` | Renders one outline chunk with inline accordion note input |
@@ -30,8 +30,9 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 ## Architecture Notes
 
 - Message items can remain **draft** in Webflow — the app fetches by `lastUpdated` so unpublished notes still appear. Publish the item later after adding the video.
-- Notes state lives in `NotesClient`. Both `NoteEditor` (inline) and `MyNotesModal` share the same state — edits in the modal reflect inline and vice versa.
-- Quick notes appended via `FloatingNoteButton` are prefixed with the selected outline text in quotes if the user highlighted something.
+- Notes state lives in `NotesClient` as two separate values: `freeNotes: string` (the freeform textarea) and `chunkNotes: string[]` (one entry per outline chunk, indexed by position). Both are backed by `sessionStorage` — persisted across tab navigation, cleared on tab/browser close.
+- `NoteEditor` and `MyNotesModal` share both state values — edits in the modal reflect everywhere.
+- When sharing with "Include full message notes" on, `chunkNotes[i]` appears directly after chunk `i` in the output (prefixed with `> `). Without the toggle, all chunk notes + freeform notes are concatenated under `── Freeform Notes ──`.
 
 ## Sunday Time-Gate
 
@@ -42,6 +43,20 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 - Logic runs server-side in `getLatestMessage()` — compute the most recent Sunday-at-6AM window, fetch the item whose date matches
 
 ## Recent Sessions
+
+### Session 05 (2026-06-06) — iOS Return key fix, sessionStorage persistence
+
+**Goal/Problem:** (1) Pressing Return on iOS inserted nothing — the keyboard `Enter` event was intercepted to save the note, leaving no way to add a newline on mobile. (2) Notes were lost whenever the user navigated to another tab.
+
+**Solution:**
+- Removed `handleKeyDown` from `InlineNoteChunk` entirely — Enter now behaves as a native newline on all platforms. Saving still happens via `onBlur` (iOS "Done" button, tapping away), which was already reliable.
+- Added `sessionStorage` persistence to `NotesClient`: both `freeNotes` and `chunkNotes` are read via lazy `useState` initializers on mount and written back via `useEffect` on every change. Keys: `spirit-notes-free`, `spirit-notes-chunks`. Notes survive in-tab navigation but are cleared when the tab or browser closes.
+
+**Files Modified:**
+- `components/notes/InlineNoteChunk.tsx` — removed `handleKeyDown`, removed `onKeyDown` prop from textarea
+- `components/notes/NotesClient.tsx` — lazy sessionStorage init for both state values, write-back effects
+
+**Status:** Awaiting device testing
 
 ### Session 04 (2026-06-06) — Positional chunk notes, label renames
 

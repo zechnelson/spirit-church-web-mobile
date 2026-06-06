@@ -27,28 +27,7 @@ export function InlineNoteChunk({ lines, chunkIndex, onSaveNote }: InlineNoteChu
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (e.metaKey || e.ctrlKey) {
-        const el = e.currentTarget;
-        const start = el.selectionStart ?? inputValue.length;
-        const end = el.selectionEnd ?? inputValue.length;
-        const next = inputValue.slice(0, start) + "\n" + inputValue.slice(end);
-        setInputValue(next);
-        requestAnimationFrame(() => {
-          el.selectionStart = el.selectionEnd = start + 1;
-        });
-        return;
-      }
-      const trimmed = inputValue.trim();
-      if (!trimmed || trimmed === lastSavedRef.current) return;
-      onSaveNote(trimmed, chunkIndex);
-      lastSavedRef.current = trimmed;
-    }
-  };
-
-  const handleBlur = () => {
+const handleBlur = () => {
     if (discardRef.current) {
       discardRef.current = false;
       return;
@@ -122,7 +101,6 @@ export function InlineNoteChunk({ lines, chunkIndex, onSaveNote }: InlineNoteChu
           rows={4}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           placeholder="Type a note…"
           className="mt-2 w-full resize-none rounded-xl border border-ink-300 bg-ink-200 px-4 py-3 text-[14px] leading-relaxed text-ink-900 placeholder:text-ink-500 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 transition-colors"

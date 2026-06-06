@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { SermonOutline } from "./SermonOutline";
 import { NoteEditor } from "./NoteEditor";
@@ -29,9 +29,27 @@ function chunkLines(lines: string[]): string[][] {
 }
 
 export function NotesClient({ sermonTitle, speaker, outlineLines }: NotesClientProps) {
-  const [freeNotes, setFreeNotes] = useState("");
-  const [chunkNotes, setChunkNotes] = useState<string[]>([]);
+  const [freeNotes, setFreeNotes] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return sessionStorage.getItem("spirit-notes-free") ?? "";
+  });
+  const [chunkNotes, setChunkNotes] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(sessionStorage.getItem("spirit-notes-chunks") ?? "[]");
+    } catch {
+      return [];
+    }
+  });
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+
+  useEffect(() => {
+    sessionStorage.setItem("spirit-notes-free", freeNotes);
+  }, [freeNotes]);
+
+  useEffect(() => {
+    sessionStorage.setItem("spirit-notes-chunks", JSON.stringify(chunkNotes));
+  }, [chunkNotes]);
 
   const chunks = chunkLines(outlineLines);
 
