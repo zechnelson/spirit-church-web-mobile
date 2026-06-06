@@ -44,6 +44,22 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 
 ## Recent Sessions
 
+### Session 07 (2026-06-06) — flushSync fix for Copy/Share disabled on iOS
+
+**Goal/Problem:** On iOS Safari, the Copy and Share buttons remained grayed out immediately after saving a chunk note. The user saw the "Added to session notes" toast and tapped Copy, but the button was still disabled.
+
+**Root Cause:** `toast.success()` fires synchronously via Sonner's own store before React processes the `setChunkNotes` state update. The toast appeared — signalling success — but `NoteEditor` hadn't re-rendered yet, so `hasNotes` was still `false` and the buttons were still disabled. By the time React flushed, the tap had already missed the enabled button.
+
+**Solution:**
+- Wrapped `setChunkNotes` in `flushSync()` in `appendNote` so React re-renders `NoteEditor` (enabling Copy/Share) synchronously before `toast.success()` fires.
+
+**Files Modified:**
+- `components/notes/NotesClient.tsx` — added `flushSync` import from `react-dom`; wrapped `setChunkNotes` call in `flushSync()`
+
+**Status:** Awaiting device testing
+
+---
+
 ### Session 06 (2026-06-06) — Saved chunk notes display in outline
 
 **Goal/Problem:** Notes saved via the per-chunk "Add Notes" accordion were persisted in sessionStorage but not displayed back in the outline after tab navigation. Each `InlineNoteChunk` had only local `inputValue` state starting at `""` — no prop for the already-saved chunk note.
@@ -119,21 +135,4 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 
 **Status:** Awaiting device testing
 
-### Session 02 (2026-05-29) — Inline note chunks, FAB cleanup
-
-**Goal:** Replace the floating green plus FAB quick-note sheet with per-chunk inline note inputs directly in the outline.
-
-**Solution:**
-- Refactored `SermonOutline` to split outline lines on `---`/`___` separator lines into chunks, rendering each as an `InlineNoteChunk`
-- `InlineNoteChunk` renders its lines then shows a full-width "Add Notes" secondary button; tapping it accordions open a 4-row textarea (⌘↵ to save). The `+` icon rotates 45° to an `×` and the label switches to "Remove Note" when open.
-- Removed `FloatingNoteButton` quick-note sheet (green plus FAB + slide-up modal) entirely — now just the green FileText FAB that opens the My Notes modal
-- Cleaned up dead `selectedText`/`onTextSelected` prop chain from `NotesClient` → `SermonOutline` → `InlineNoteChunk`
-
-**Files Modified:**
-- `components/notes/InlineNoteChunk.tsx` — new file
-- `components/notes/SermonOutline.tsx` — chunk splitting, delegates to `InlineNoteChunk`
-- `components/notes/FloatingNoteButton.tsx` — stripped to FileText FAB only, now green
-- `components/notes/NotesClient.tsx` — removed selectedText state, clearSelection, dead props
-
-**Status:** VERIFIED WORKING
 
