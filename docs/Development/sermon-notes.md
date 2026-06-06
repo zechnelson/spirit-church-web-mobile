@@ -44,6 +44,24 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 
 ## Recent Sessions
 
+### Session 06 (2026-06-06) — Saved chunk notes display in outline
+
+**Goal/Problem:** Notes saved via the per-chunk "Add Notes" accordion were persisted in sessionStorage but not displayed back in the outline after tab navigation. Each `InlineNoteChunk` had only local `inputValue` state starting at `""` — no prop for the already-saved chunk note.
+
+**Solution:**
+- Threaded `chunkNotes` from `NotesClient` → `SermonOutline` → `InlineNoteChunk` as a `savedNote: string` prop
+- `InlineNoteChunk` now renders a brand-colored left-bordered block (`border-l-2 border-brand-400`) below the outline lines when `savedNote` is non-empty — always visible, no need to open the accordion
+- `whitespace-pre-wrap` preserves multi-line notes
+
+**Files Modified:**
+- `components/notes/NotesClient.tsx` — passes `chunkNotes` to `SermonOutline`
+- `components/notes/SermonOutline.tsx` — accepts `chunkNotes: string[]`, passes `chunkNotes[i]` as `savedNote` to each `InlineNoteChunk`
+- `components/notes/InlineNoteChunk.tsx` — accepts `savedNote` prop, renders it when non-empty
+
+**Status:** Awaiting device testing
+
+---
+
 ### Session 05 (2026-06-06) — iOS Return key fix, sessionStorage persistence
 
 **Goal/Problem:** (1) Pressing Return on iOS inserted nothing — the keyboard `Enter` event was intercepted to save the note, leaving no way to add a newline on mobile. (2) Notes were lost whenever the user navigated to another tab.
@@ -119,20 +137,3 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 
 **Status:** VERIFIED WORKING
 
-### Session 01 (2026-05-15) — Webflow connection, My Notes modal, nav fix
-
-**Goal:** Connect sermon notes to Webflow CMS, add quick-access My Notes modal, fix bottom nav scroll bug.
-
-**Solution:**
-- Fixed `getLatestMessage()` field name (`message-notes-link` → `sermon-notes-download`) and sort (`lastPublished` → `lastUpdated`) so draft items appear
-- Added `will-change-transform` to `BottomNav` to prevent the nav from shrinking when the mobile browser address bar hides on scroll
-- Added `MyNotesModal` — 3/4-screen bottom sheet with backdrop, triggered by a new secondary FAB (white circle, `FileText` icon) positioned above the green plus FAB. Modal wraps the full `NoteEditor` component and shares `notes` state from `NotesClient`.
-
-**Files Modified:**
-- `lib/webflow.ts` — field name + sort fix
-- `components/nav/BottomNav.tsx` — `will-change-transform`
-- `components/notes/FloatingNoteButton.tsx` — secondary FAB added
-- `components/notes/NotesClient.tsx` — modal state wired up
-- `components/notes/MyNotesModal.tsx` — new file
-
-**Status:** VERIFIED WORKING
