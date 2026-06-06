@@ -8,7 +8,8 @@ interface NoteEditorProps {
   onNotesChange: (value: string) => void;
   sermonTitle: string;
   speaker: string;
-  outlineLines: string[];
+  outlineChunks: string[][];
+  chunkNotes: string[];
 }
 
 export function NoteEditor({
@@ -16,7 +17,8 @@ export function NoteEditor({
   onNotesChange,
   sermonTitle,
   speaker,
-  outlineLines,
+  outlineChunks,
+  chunkNotes,
 }: NoteEditorProps) {
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
@@ -26,14 +28,31 @@ export function NoteEditor({
     setCanShare(!!navigator.share);
   }, []);
 
-  const sermonText = outlineLines.filter(Boolean).join("\n");
+  const hasNotes =
+    notes.trim().length > 0 || chunkNotes.some((n) => n?.trim());
+
+  const interleavedOutline = outlineChunks
+    .map((chunk, i) => {
+      const chunkText = chunk.filter(Boolean).join("\n");
+      const note = chunkNotes[i]?.trim();
+      return note ? `${chunkText}\n\n> ${note}` : chunkText;
+    })
+    .join("\n\n");
+
+  const allNotesText = [
+    ...chunkNotes.filter((n) => n?.trim()),
+    notes.trim(),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   const shareText = [
     `${sermonTitle} — ${speaker}`,
     "",
-    ...(includeSermon ? ["── Message Notes ──", sermonText, ""] : []),
-    "── My Notes ──",
-    notes,
+    ...(includeSermon ? ["── Message Notes ──", interleavedOutline, ""] : []),
+    ...(includeSermon
+      ? notes.trim() ? ["── Freeform Notes ──", notes] : []
+      : allNotesText ? ["── Freeform Notes ──", allNotesText] : []),
   ].join("\n");
 
   const handleCopy = useCallback(async () => {
@@ -60,7 +79,7 @@ export function NoteEditor({
   return (
     <div className="mx-4 mt-4 rounded-2xl bg-white px-5 py-5">
       <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-ink-600">
-        My Notes
+        Additional Notes
       </p>
 
       <textarea
@@ -97,7 +116,7 @@ export function NoteEditor({
       <div className="mt-3 flex flex-col gap-2">
         <button
           onClick={handleCopy}
-          disabled={notes.trim().length === 0}
+          disabled={!hasNotes}
           className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-ink-300 bg-white px-4 py-3 text-[14px] font-semibold text-ink-900 transition-opacity active:opacity-70 disabled:opacity-40"
         >
           {copied ? (
@@ -115,7 +134,7 @@ export function NoteEditor({
 
         <button
           onClick={handleShare}
-          disabled={notes.trim().length === 0}
+          disabled={!hasNotes}
           className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-[14px] font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-40"
         >
           {canShare ? (

@@ -5,13 +5,16 @@ import { PlusCircle } from "lucide-react";
 
 interface InlineNoteChunkProps {
   lines: string[];
-  onSaveNote: (text: string) => void;
+  chunkIndex: number;
+  onSaveNote: (text: string, chunkIndex: number) => void;
 }
 
-export function InlineNoteChunk({ lines, onSaveNote }: InlineNoteChunkProps) {
+export function InlineNoteChunk({ lines, chunkIndex, onSaveNote }: InlineNoteChunkProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const discardRef = useRef(false);
+  const lastSavedRef = useRef("");
 
   const handleToggle = () => {
     if (!isOpen) {
@@ -20,17 +23,40 @@ export function InlineNoteChunk({ lines, onSaveNote }: InlineNoteChunkProps) {
     } else {
       setIsOpen(false);
       setInputValue("");
+      lastSavedRef.current = "";
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    if (e.key === "Enter") {
       e.preventDefault();
+      if (e.metaKey || e.ctrlKey) {
+        const el = e.currentTarget;
+        const start = el.selectionStart ?? inputValue.length;
+        const end = el.selectionEnd ?? inputValue.length;
+        const next = inputValue.slice(0, start) + "\n" + inputValue.slice(end);
+        setInputValue(next);
+        requestAnimationFrame(() => {
+          el.selectionStart = el.selectionEnd = start + 1;
+        });
+        return;
+      }
       const trimmed = inputValue.trim();
-      if (!trimmed) return;
-      onSaveNote(trimmed);
-      setInputValue("");
+      if (!trimmed || trimmed === lastSavedRef.current) return;
+      onSaveNote(trimmed, chunkIndex);
+      lastSavedRef.current = trimmed;
     }
+  };
+
+  const handleBlur = () => {
+    if (discardRef.current) {
+      discardRef.current = false;
+      return;
+    }
+    const trimmed = inputValue.trim();
+    if (!trimmed || trimmed === lastSavedRef.current) return;
+    onSaveNote(trimmed, chunkIndex);
+    lastSavedRef.current = trimmed;
   };
 
   return (
@@ -74,6 +100,8 @@ export function InlineNoteChunk({ lines, onSaveNote }: InlineNoteChunkProps) {
       <button
         type="button"
         onClick={handleToggle}
+        onMouseDown={() => { discardRef.current = true; }}
+        onTouchStart={() => { discardRef.current = true; }}
         className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-ink-300 py-2.5 text-[13px] font-semibold text-ink-700 transition-opacity active:opacity-60"
       >
         <PlusCircle
@@ -95,7 +123,8 @@ export function InlineNoteChunk({ lines, onSaveNote }: InlineNoteChunkProps) {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a note… ⌘↵ to save"
+          onBlur={handleBlur}
+          placeholder="Type a note…"
           className="mt-2 w-full resize-none rounded-xl border border-ink-300 bg-ink-200 px-4 py-3 text-[14px] leading-relaxed text-ink-900 placeholder:text-ink-500 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 transition-colors"
         />
       </div>

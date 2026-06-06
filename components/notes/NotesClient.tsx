@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { SermonOutline } from "./SermonOutline";
 import { NoteEditor } from "./NoteEditor";
 import { FloatingNoteButton } from "./FloatingNoteButton";
@@ -12,23 +13,49 @@ interface NotesClientProps {
   outlineLines: string[];
 }
 
+function chunkLines(lines: string[]): string[][] {
+  const chunks: string[][] = [];
+  let current: string[] = [];
+  for (const line of lines) {
+    if (/^[_-]{3,}$/.test(line.trim())) {
+      if (current.length > 0) chunks.push(current);
+      current = [];
+    } else {
+      current.push(line);
+    }
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks.length > 0 ? chunks : [lines];
+}
+
 export function NotesClient({ sermonTitle, speaker, outlineLines }: NotesClientProps) {
-  const [notes, setNotes] = useState("");
+  const [freeNotes, setFreeNotes] = useState("");
+  const [chunkNotes, setChunkNotes] = useState<string[]>([]);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
 
-  const appendNote = (text: string) => {
-    setNotes((prev) => (prev.trim() ? `${prev}\n${text}` : text));
+  const chunks = chunkLines(outlineLines);
+
+  const appendNote = (text: string, chunkIndex: number) => {
+    setChunkNotes((prev) => {
+      const next = [...prev];
+      next[chunkIndex] = prev[chunkIndex]?.trim()
+        ? `${prev[chunkIndex]}\n${text}`
+        : text;
+      return next;
+    });
+    toast.success("Added to session notes");
   };
 
   return (
     <>
-      <SermonOutline lines={outlineLines} onSaveNote={appendNote} />
+      <SermonOutline chunks={chunks} onSaveNote={appendNote} />
       <NoteEditor
-        notes={notes}
-        onNotesChange={setNotes}
+        notes={freeNotes}
+        onNotesChange={setFreeNotes}
         sermonTitle={sermonTitle}
         speaker={speaker}
-        outlineLines={outlineLines}
+        outlineChunks={chunks}
+        chunkNotes={chunkNotes}
       />
       <FloatingNoteButton
         onOpenNotesModal={() => setIsNotesModalOpen(true)}
@@ -36,11 +63,12 @@ export function NotesClient({ sermonTitle, speaker, outlineLines }: NotesClientP
       <MyNotesModal
         isOpen={isNotesModalOpen}
         onClose={() => setIsNotesModalOpen(false)}
-        notes={notes}
-        onNotesChange={setNotes}
+        notes={freeNotes}
+        onNotesChange={setFreeNotes}
         sermonTitle={sermonTitle}
         speaker={speaker}
-        outlineLines={outlineLines}
+        outlineChunks={chunks}
+        chunkNotes={chunkNotes}
       />
     </>
   );

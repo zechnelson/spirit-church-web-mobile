@@ -20,6 +20,19 @@ Shared navigation components used across all pages. Currently a single `BottomNa
 
 ## Recent Sessions
 
+### Session 02 (2026-06-06) — Remove hide-on-scroll, always-visible nav
+
+**Goal/Problem:** Remove the hide-on-scroll behavior so the bottom nav is always visible.
+
+**Solution:**
+- Removed `hidden` state, `lastScrollY` ref, scroll event listener, and `transition-transform` classes from `BottomNav`
+- Nav is now always `fixed bottom-0`, no transform applied
+
+**Files Modified:**
+- `components/nav/BottomNav.tsx` — stripped scroll logic, simplified to static sticky nav
+
+**Status:** VERIFIED WORKING
+
 ### Session 01 (2026-05-29) — Hide-on-scroll behavior
 
 **Goal:** Hide the bottom nav when scrolling down, reveal it when scrolling back up.

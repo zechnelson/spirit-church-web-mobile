@@ -10,7 +10,8 @@ interface MyNotesModalProps {
   onNotesChange: (value: string) => void;
   sermonTitle: string;
   speaker: string;
-  outlineLines: string[];
+  outlineChunks: string[][];
+  chunkNotes: string[];
 }
 
 export function MyNotesModal({
@@ -20,7 +21,8 @@ export function MyNotesModal({
   onNotesChange,
   sermonTitle,
   speaker,
-  outlineLines,
+  outlineChunks,
+  chunkNotes,
 }: MyNotesModalProps) {
   return (
     <>
@@ -46,7 +48,7 @@ export function MyNotesModal({
 
         {/* Header */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-ink-300 px-4 pb-3">
-          <p className="text-[15px] font-semibold text-ink-900">My Notes</p>
+          <p className="text-[15px] font-semibold text-ink-900">Notes</p>
           <button
             onClick={onClose}
             className="flex h-7 w-7 items-center justify-center rounded-full bg-ink-200 text-ink-600 active:opacity-70"
@@ -62,7 +64,8 @@ export function MyNotesModal({
             onNotesChange={onNotesChange}
             sermonTitle={sermonTitle}
             speaker={speaker}
-            outlineLines={outlineLines}
+            outlineChunks={outlineChunks}
+            chunkNotes={chunkNotes}
           />
         </div>
       </div>
