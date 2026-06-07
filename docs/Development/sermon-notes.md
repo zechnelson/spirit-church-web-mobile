@@ -44,6 +44,36 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 
 ## Recent Sessions
 
+### Session 09 (2026-06-06) — Remove savedNote inline display from outline
+
+**Goal/Problem:** Saved chunk notes were being rendered as a left-bordered block between the outline text and the "Remove Note" button, duplicating the content visibly in the outline while the accordion was open.
+
+**Solution:**
+- Removed the `savedNote` render block from `InlineNoteChunk` — the `savedNote` prop is still received (needed for share/copy output) but no longer displayed in the outline UI.
+
+**Files Modified:**
+- `components/notes/InlineNoteChunk.tsx` — removed `{savedNote.trim() && <div>...</div>}` block
+
+**Status:** Awaiting device testing
+
+---
+
+### Session 08 (2026-06-06) — First chunk note not saving on iOS (discardRef bug)
+
+**Goal/Problem:** On iOS Safari, the very first note added to the first chunk never saved — tapping outside, hitting the native "Done" button, and pressing Enter all silently dropped the note. Subsequent attempts to the same chunk worked fine.
+
+**Root Cause:** `discardRef.current` was being set to `true` in the `onTouchStart` handler of the toggle button unconditionally — including when the user was *opening* the accordion ("Add Notes"), not just when closing it ("Remove Note"). So on the first open, `handleBlur` would see `discardRef.current === true`, reset it to `false`, and return early — dropping the note. The second blur worked because `discardRef` had already been reset.
+
+**Solution:**
+- Added `isOpen` guard: `onMouseDown`/`onTouchStart` on the toggle button now only set `discardRef.current = true` when `isOpen` is already `true` (i.e., when the button is acting as "Remove Note")
+
+**Files Modified:**
+- `components/notes/InlineNoteChunk.tsx` — added `if (isOpen)` guard to both `onMouseDown` and `onTouchStart` handlers on the toggle button
+
+**Status:** Awaiting device testing
+
+---
+
 ### Session 07 (2026-06-06) — flushSync fix for Copy/Share disabled on iOS
 
 **Goal/Problem:** On iOS Safari, the Copy and Share buttons remained grayed out immediately after saving a chunk note. The user saw the "Added to session notes" toast and tapped Copy, but the button was still disabled.
@@ -62,19 +92,18 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 
 ### Session 06 (2026-06-06) — Saved chunk notes display in outline
 
-**Goal/Problem:** Notes saved via the per-chunk "Add Notes" accordion were persisted in sessionStorage but not displayed back in the outline after tab navigation. Each `InlineNoteChunk` had only local `inputValue` state starting at `""` — no prop for the already-saved chunk note.
+**Goal/Problem:** Notes saved via the per-chunk "Add Notes" accordion were persisted in sessionStorage but not displayed back in the outline after tab navigation.
 
 **Solution:**
 - Threaded `chunkNotes` from `NotesClient` → `SermonOutline` → `InlineNoteChunk` as a `savedNote: string` prop
-- `InlineNoteChunk` now renders a brand-colored left-bordered block (`border-l-2 border-brand-400`) below the outline lines when `savedNote` is non-empty — always visible, no need to open the accordion
-- `whitespace-pre-wrap` preserves multi-line notes
+- `InlineNoteChunk` rendered a brand-colored left-bordered block when `savedNote` was non-empty (later removed in Session 09)
 
 **Files Modified:**
 - `components/notes/NotesClient.tsx` — passes `chunkNotes` to `SermonOutline`
 - `components/notes/SermonOutline.tsx` — accepts `chunkNotes: string[]`, passes `chunkNotes[i]` as `savedNote` to each `InlineNoteChunk`
-- `components/notes/InlineNoteChunk.tsx` — accepts `savedNote` prop, renders it when non-empty
+- `components/notes/InlineNoteChunk.tsx` — accepts `savedNote` prop
 
-**Status:** Awaiting device testing
+**Status:** Superseded by Session 09 (display removed)
 
 ---
 
@@ -89,43 +118,6 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 **Files Modified:**
 - `components/notes/InlineNoteChunk.tsx` — removed `handleKeyDown`, removed `onKeyDown` prop from textarea
 - `components/notes/NotesClient.tsx` — lazy sessionStorage init for both state values, write-back effects
-
-**Status:** Awaiting device testing
-
-### Session 04 (2026-06-06) — Positional chunk notes, label renames
-
-**Goal/Problem:** Inline notes added via "Add Notes" buttons appeared at the very end of the copy/share text instead of after their respective outline chunk. Also renamed UI labels.
-
-**Solution:**
-- Changed data model: replaced flat `notes: string` with `freeNotes: string` (freeform textarea) + `chunkNotes: string[]` (indexed by chunk position) in `NotesClient`
-- Extracted `chunkLines()` helper into `NotesClient` so chunks are computed once and passed to both `SermonOutline` and `NoteEditor`/`MyNotesModal`
-- `appendNote(text, chunkIndex)` now stores notes in `chunkNotes[chunkIndex]`
-- `SermonOutline` accepts `chunks: string[][]` prop (no longer computes internally); passes `chunkIndex` to each `InlineNoteChunk`
-- `InlineNoteChunk` gains `chunkIndex: number` prop, passes it through all `onSaveNote` calls
-- `NoteEditor` builds interleaved share text: when "Include full message notes" is on, each chunk's note (`> note text`) appears directly after its outline lines. When off, all notes (chunk + freeform) concatenate under "── Freeform Notes ──"
-- Renamed labels: modal header → **Notes**, section label → **ADDITIONAL NOTES**, share separator → `── Freeform Notes ──`
-- Copy/Share buttons now enable when any note exists (chunk or freeform), not just when the textarea has content
-
-**Files Modified:**
-- `components/notes/NotesClient.tsx` — `chunkNotes` state, `chunkLines()` helper, `appendNote(text, chunkIndex)`, updated props to children
-- `components/notes/SermonOutline.tsx` — accepts `chunks` prop, passes `chunkIndex` to `InlineNoteChunk`, removed internal `chunkLines`
-- `components/notes/InlineNoteChunk.tsx` — `chunkIndex` prop, passes through `onSaveNote`
-- `components/notes/NoteEditor.tsx` — `outlineChunks` + `chunkNotes` props, interleaved `shareText`, label renames, updated `disabled` condition
-- `components/notes/MyNotesModal.tsx` — updated props, header rename
-
-**Status:** Awaiting device testing
-
-### Session 08 (2026-06-06) — First chunk note not saving on iOS (discardRef bug)
-
-**Goal/Problem:** On iOS Safari, the very first note added to the first chunk never saved — tapping outside, hitting the native "Done" button, and pressing Enter all silently dropped the note. Subsequent attempts to the same chunk worked fine.
-
-**Root Cause:** `discardRef.current` was being set to `true` in the `onTouchStart` handler of the toggle button unconditionally — including when the user was *opening* the accordion ("Add Notes"), not just when closing it ("Remove Note"). So on the first open, `handleBlur` would see `discardRef.current === true`, reset it to `false`, and return early — dropping the note. The second blur worked because `discardRef` had already been reset.
-
-**Solution:**
-- Added `isOpen` guard: `onMouseDown`/`onTouchStart` on the toggle button now only set `discardRef.current = true` when `isOpen` is already `true` (i.e., when the button is acting as "Remove Note")
-
-**Files Modified:**
-- `components/notes/InlineNoteChunk.tsx` — added `if (isOpen)` guard to both `onMouseDown` and `onTouchStart` handlers on the toggle button
 
 **Status:** Awaiting device testing
 

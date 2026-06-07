@@ -77,12 +77,6 @@ const handleBlur = () => {
         })}
       </div>
 
-      {savedNote.trim() && (
-        <div className="mt-3 border-l-2 border-brand-400 pl-3">
-          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink-700">{savedNote.trim()}</p>
-        </div>
-      )}
-
       <button
         type="button"
         onClick={handleToggle}
