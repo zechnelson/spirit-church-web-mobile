@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { flushSync } from "react-dom";
 import { toast } from "sonner";
 import { SermonOutline } from "./SermonOutline";
 import { NoteEditor } from "./NoteEditor";
@@ -54,19 +55,21 @@ export function NotesClient({ sermonTitle, speaker, outlineLines }: NotesClientP
   const chunks = chunkLines(outlineLines);
 
   const appendNote = (text: string, chunkIndex: number) => {
-    setChunkNotes((prev) => {
-      const next = [...prev];
-      next[chunkIndex] = prev[chunkIndex]?.trim()
-        ? `${prev[chunkIndex]}\n${text}`
-        : text;
-      return next;
+    flushSync(() => {
+      setChunkNotes((prev) => {
+        const next = [...prev];
+        next[chunkIndex] = prev[chunkIndex]?.trim()
+          ? `${prev[chunkIndex]}\n${text}`
+          : text;
+        return next;
+      });
     });
     toast.success("Added to session notes");
   };
 
   return (
     <>
-      <SermonOutline chunks={chunks} onSaveNote={appendNote} />
+      <SermonOutline chunks={chunks} chunkNotes={chunkNotes} onSaveNote={appendNote} />
       <NoteEditor
         notes={freeNotes}
         onNotesChange={setFreeNotes}

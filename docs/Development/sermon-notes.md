@@ -115,23 +115,17 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 
 **Status:** Awaiting device testing
 
-### Session 03 (2026-06-06) — Inline note save fixes, toast feedback
+### Session 08 (2026-06-06) — First chunk note not saving on iOS (discardRef bug)
 
-**Goal/Problem:** Several bugs with the `InlineNoteChunk` note input: (1) iOS "Done" keyboard button didn't save the note, (2) tapping out of the field cleared the draft, (3) no user feedback when a note was saved.
+**Goal/Problem:** On iOS Safari, the very first note added to the first chunk never saved — tapping outside, hitting the native "Done" button, and pressing Enter all silently dropped the note. Subsequent attempts to the same chunk worked fine.
+
+**Root Cause:** `discardRef.current` was being set to `true` in the `onTouchStart` handler of the toggle button unconditionally — including when the user was *opening* the accordion ("Add Notes"), not just when closing it ("Remove Note"). So on the first open, `handleBlur` would see `discardRef.current === true`, reset it to `false`, and return early — dropping the note. The second blur worked because `discardRef` had already been reset.
 
 **Solution:**
-- Added `onBlur` to `InlineNoteChunk` to save on keyboard dismiss (iOS "Done" fires `blur`, not a keydown)
-- Added `discardRef` (set on `onMouseDown`/`onTouchStart` of the "Remove Note" button) to prevent blur from accidentally saving when the user intentionally discards
-- Added `lastSavedRef` to track the last saved value — field no longer clears after save, and duplicate saves are skipped if content hasn't changed
-- Plain **Enter** saves the note; **⌘↵ / Ctrl+Enter** inserts a newline (manually handled since the textarea is a controlled component)
-- Installed `sonner` and added `<Toaster position="top-center" richColors />` to root layout
-- Toast "Added to session notes" fires in `appendNote` in `NotesClient` — covers all current and future note-save paths centrally
+- Added `isOpen` guard: `onMouseDown`/`onTouchStart` on the toggle button now only set `discardRef.current = true` when `isOpen` is already `true` (i.e., when the button is acting as "Remove Note")
 
 **Files Modified:**
-- `components/notes/InlineNoteChunk.tsx` — `onBlur`, `discardRef`, `lastSavedRef`, Enter/⌘↵ keyboard handling
-- `components/notes/NotesClient.tsx` — toast call in `appendNote`
-- `app/layout.tsx` — `<Toaster>` added
-- `package.json` — `sonner` added
+- `components/notes/InlineNoteChunk.tsx` — added `if (isOpen)` guard to both `onMouseDown` and `onTouchStart` handlers on the toggle button
 
 **Status:** Awaiting device testing
 

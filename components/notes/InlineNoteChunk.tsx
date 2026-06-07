@@ -6,10 +6,11 @@ import { PlusCircle } from "lucide-react";
 interface InlineNoteChunkProps {
   lines: string[];
   chunkIndex: number;
+  savedNote: string;
   onSaveNote: (text: string, chunkIndex: number) => void;
 }
 
-export function InlineNoteChunk({ lines, chunkIndex, onSaveNote }: InlineNoteChunkProps) {
+export function InlineNoteChunk({ lines, chunkIndex, savedNote, onSaveNote }: InlineNoteChunkProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -76,11 +77,17 @@ const handleBlur = () => {
         })}
       </div>
 
+      {savedNote.trim() && (
+        <div className="mt-3 border-l-2 border-brand-400 pl-3">
+          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink-700">{savedNote.trim()}</p>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={handleToggle}
-        onMouseDown={() => { discardRef.current = true; }}
-        onTouchStart={() => { discardRef.current = true; }}
+        onMouseDown={() => { if (isOpen) discardRef.current = true; }}
+        onTouchStart={() => { if (isOpen) discardRef.current = true; }}
         className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-ink-300 py-2.5 text-[13px] font-semibold text-ink-700 transition-opacity active:opacity-60"
       >
         <PlusCircle
