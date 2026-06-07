@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { flushSync } from "react-dom";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { SermonOutline } from "./SermonOutline";
 import { NoteEditor } from "./NoteEditor";
@@ -30,41 +29,47 @@ function chunkLines(lines: string[]): string[][] {
 }
 
 export function NotesClient({ sermonTitle, speaker, outlineLines }: NotesClientProps) {
-  const [freeNotes, setFreeNotes] = useState<string>(() => {
-    if (typeof window === "undefined") return "";
-    return sessionStorage.getItem("spirit-notes-free") ?? "";
-  });
-  const [chunkNotes, setChunkNotes] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      return JSON.parse(sessionStorage.getItem("spirit-notes-chunks") ?? "[]");
-    } catch {
-      return [];
-    }
-  });
+  const [freeNotes, setFreeNotes] = useState<string>("");
+  const [chunkNotes, setChunkNotes] = useState<string[]>([]);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const pendingToastRef = useRef(false);
 
   useEffect(() => {
+    setFreeNotes(sessionStorage.getItem("spirit-notes-free") ?? "");
+    try {
+      setChunkNotes(JSON.parse(sessionStorage.getItem("spirit-notes-chunks") ?? "[]"));
+    } catch {
+      // keep empty array
+    }
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
     sessionStorage.setItem("spirit-notes-free", freeNotes);
-  }, [freeNotes]);
+  }, [freeNotes, isHydrated]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     sessionStorage.setItem("spirit-notes-chunks", JSON.stringify(chunkNotes));
-  }, [chunkNotes]);
+    if (pendingToastRef.current) {
+      pendingToastRef.current = false;
+      toast.success("Added to session notes");
+    }
+  }, [chunkNotes, isHydrated]);
 
   const chunks = chunkLines(outlineLines);
 
   const appendNote = (text: string, chunkIndex: number) => {
-    flushSync(() => {
-      setChunkNotes((prev) => {
-        const next = [...prev];
-        next[chunkIndex] = prev[chunkIndex]?.trim()
-          ? `${prev[chunkIndex]}\n${text}`
-          : text;
-        return next;
-      });
+    pendingToastRef.current = true;
+    setChunkNotes((prev) => {
+      const next = [...prev];
+      next[chunkIndex] = prev[chunkIndex]?.trim()
+        ? `${prev[chunkIndex]}\n${text}`
+        : text;
+      return next;
     });
-    toast.success("Added to session notes");
   };
 
   return (

@@ -44,6 +44,43 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 
 ## Recent Sessions
 
+### Session 11 (2026-06-06) — Fix hydration mismatch on Copy/Share buttons
+
+**Goal/Problem:** Console hydration error: server rendered buttons as `disabled=""` but client rendered `disabled={false}`. React warned it would not patch the mismatch.
+
+**Root Cause:** The lazy `useState` initializers used `typeof window !== 'undefined'` to conditionally read from `sessionStorage`. On the server, `chunkNotes = []` → `hasNotes = false` → buttons disabled. On the client, if sessionStorage had saved notes, `hasNotes = true` → buttons enabled. This is the exact pattern React flags for hydration mismatches.
+
+**Solution:**
+- Replaced lazy `useState` initializers with empty defaults (`""` and `[]`) — server and client start identically
+- Added `isHydrated` state (starts `false`)
+- Added a mount-only `useEffect` that reads from sessionStorage and calls `setFreeNotes`, `setChunkNotes`, and `setIsHydrated(true)` — all batched into one render
+- Write effects now guard with `if (!isHydrated) return` to avoid overwriting sessionStorage with empty defaults before the read completes
+
+**Files Modified:**
+- `components/notes/NotesClient.tsx` — replaced lazy useState initializers; added `isHydrated` state; added mount effect for sessionStorage load; added `isHydrated` guard to both write effects
+
+**Status:** Awaiting device testing
+
+---
+
+### Session 10 (2026-06-06) — flushSync removal: toast fires after state commits (React 19)
+
+**Goal/Problem:** Copy/Share buttons remained disabled after saving a chunk note, even though the toast confirmed the save. The `flushSync` fix from Session 07 was not working.
+
+**Root Cause:** In React 19, `flushSync` inside a React discrete event handler (`onBlur`) does not force a mid-handler synchronous re-render. Sonner uses `useSyncExternalStore` internally, which renders the toast synchronously when `toast.success()` is called — but `chunkNotes` hadn't committed yet, so `hasNotes = false` and the buttons were still disabled.
+
+**Solution:**
+- Removed `flushSync` from `appendNote` (and `flushSync` import from `react-dom`)
+- Added `pendingToastRef` (`useRef<boolean>`) to flag when a toast is pending
+- Toast now fires from the existing `useEffect` watching `chunkNotes`, which runs after the state has committed and `hasNotes = true`
+
+**Files Modified:**
+- `components/notes/NotesClient.tsx` — removed `flushSync` import and usage; added `pendingToastRef`; moved `toast.success()` into the `chunkNotes` useEffect
+
+**Status:** Awaiting device testing
+
+---
+
 ### Session 09 (2026-06-06) — Remove savedNote inline display from outline
 
 **Goal/Problem:** Saved chunk notes were being rendered as a left-bordered block between the outline text and the "Remove Note" button, duplicating the content visibly in the outline while the accordion was open.
@@ -87,38 +124,4 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 - `components/notes/NotesClient.tsx` — added `flushSync` import from `react-dom`; wrapped `setChunkNotes` call in `flushSync()`
 
 **Status:** Awaiting device testing
-
----
-
-### Session 06 (2026-06-06) — Saved chunk notes display in outline
-
-**Goal/Problem:** Notes saved via the per-chunk "Add Notes" accordion were persisted in sessionStorage but not displayed back in the outline after tab navigation.
-
-**Solution:**
-- Threaded `chunkNotes` from `NotesClient` → `SermonOutline` → `InlineNoteChunk` as a `savedNote: string` prop
-- `InlineNoteChunk` rendered a brand-colored left-bordered block when `savedNote` was non-empty (later removed in Session 09)
-
-**Files Modified:**
-- `components/notes/NotesClient.tsx` — passes `chunkNotes` to `SermonOutline`
-- `components/notes/SermonOutline.tsx` — accepts `chunkNotes: string[]`, passes `chunkNotes[i]` as `savedNote` to each `InlineNoteChunk`
-- `components/notes/InlineNoteChunk.tsx` — accepts `savedNote` prop
-
-**Status:** Superseded by Session 09 (display removed)
-
----
-
-### Session 05 (2026-06-06) — iOS Return key fix, sessionStorage persistence
-
-**Goal/Problem:** (1) Pressing Return on iOS inserted nothing — the keyboard `Enter` event was intercepted to save the note, leaving no way to add a newline on mobile. (2) Notes were lost whenever the user navigated to another tab.
-
-**Solution:**
-- Removed `handleKeyDown` from `InlineNoteChunk` entirely — Enter now behaves as a native newline on all platforms. Saving still happens via `onBlur` (iOS "Done" button, tapping away), which was already reliable.
-- Added `sessionStorage` persistence to `NotesClient`: both `freeNotes` and `chunkNotes` are read via lazy `useState` initializers on mount and written back via `useEffect` on every change. Keys: `spirit-notes-free`, `spirit-notes-chunks`. Notes survive in-tab navigation but are cleared when the tab or browser closes.
-
-**Files Modified:**
-- `components/notes/InlineNoteChunk.tsx` — removed `handleKeyDown`, removed `onKeyDown` prop from textarea
-- `components/notes/NotesClient.tsx` — lazy sessionStorage init for both state values, write-back effects
-
-**Status:** Awaiting device testing
-
 
