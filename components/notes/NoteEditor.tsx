@@ -22,7 +22,7 @@ export function NoteEditor({
 }: NoteEditorProps) {
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
-  const [includeSermon, setIncludeSermon] = useState(false);
+  const [includeSermon, setIncludeSermon] = useState(true);
 
   useEffect(() => {
     setCanShare(!!navigator.share);

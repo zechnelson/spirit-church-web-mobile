@@ -44,6 +44,20 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 
 ## Recent Sessions
 
+### Session 12 (2026-06-06) — Default "Include full message notes" toggle to on
+
+**Goal/Problem:** The "Include full message notes" toggle in NoteEditor defaulted to off, requiring users to manually enable it before copying or sharing.
+
+**Solution:**
+- Changed `useState(false)` to `useState(true)` for `includeSermon` in `NoteEditor`
+
+**Files Modified:**
+- `components/notes/NoteEditor.tsx` — `includeSermon` initial state changed from `false` to `true`
+
+**Status:** Awaiting device testing
+
+---
+
 ### Session 11 (2026-06-06) — Fix hydration mismatch on Copy/Share buttons
 
 **Goal/Problem:** Console hydration error: server rendered buttons as `disabled=""` but client rendered `disabled={false}`. React warned it would not patch the mismatch.
@@ -109,19 +123,4 @@ Live in-person note-taking feature. Users follow the message outline pulled from
 
 **Status:** Awaiting device testing
 
----
-
-### Session 07 (2026-06-06) — flushSync fix for Copy/Share disabled on iOS
-
-**Goal/Problem:** On iOS Safari, the Copy and Share buttons remained grayed out immediately after saving a chunk note. The user saw the "Added to session notes" toast and tapped Copy, but the button was still disabled.
-
-**Root Cause:** `toast.success()` fires synchronously via Sonner's own store before React processes the `setChunkNotes` state update. The toast appeared — signalling success — but `NoteEditor` hadn't re-rendered yet, so `hasNotes` was still `false` and the buttons were still disabled. By the time React flushed, the tap had already missed the enabled button.
-
-**Solution:**
-- Wrapped `setChunkNotes` in `flushSync()` in `appendNote` so React re-renders `NoteEditor` (enabling Copy/Share) synchronously before `toast.success()` fires.
-
-**Files Modified:**
-- `components/notes/NotesClient.tsx` — added `flushSync` import from `react-dom`; wrapped `setChunkNotes` call in `flushSync()`
-
-**Status:** Awaiting device testing
 
