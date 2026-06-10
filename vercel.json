@@ -3,6 +3,10 @@
     {
       "path": "/api/sync-groups",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/sync-outreach",
+      "schedule": "0 */6 * * *"
     }
   ]
 }
