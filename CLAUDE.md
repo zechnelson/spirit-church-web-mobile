@@ -37,6 +37,7 @@ spirit-church-web-mobile/
 | Church Links        | ACTIVE   | `docs/Development/church-links.md`     |
 | Navigation          | ACTIVE   | `docs/Development/navigation.md`       |
 | Groups Sync         | ACTIVE   | `docs/Development/groups-sync.md`      |
+| Outreach Sync       | ACTIVE   | `docs/Development/outreach-sync.md`    |
 | Auth / User Account | PLANNING | `docs/Development/auth.md`             |
 
 ## Documentation Table of Contents
@@ -85,6 +86,7 @@ spirit-church-web-mobile/
 | `church-links.md` | Next Steps CMS collection, color palette, home page carousels, time-gated hero banner |
 | `navigation.md`   | BottomNav component — tab bar, active states, hide-on-scroll |
 | `groups-sync.md`  | Rock RMS → Supabase → Webflow CMS sync, cron config, Webflow field schema |
+| `outreach-sync.md` | Rock RMS Sign-Up Groups → Supabase → Webflow CMS sync, outreach project pipeline |
 
 ### Debug/ — Troubleshooting
 
