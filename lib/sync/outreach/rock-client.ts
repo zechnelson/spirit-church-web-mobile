@@ -20,7 +20,7 @@ export class OutreachRockClient {
 
     const query = new URLSearchParams({
       $filter: `GroupTypeId eq ${this.groupTypeId}`,
-      $expand: "Campus,GroupLocations($expand=Location,Schedules)",
+      $expand: "Campus,GroupLocations,GroupLocations/Location,GroupLocations/Schedules",
       loadAttributes: "simple",
     });
 
