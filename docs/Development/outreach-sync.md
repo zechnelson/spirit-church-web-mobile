@@ -43,10 +43,8 @@ Table: `outreach_projects` — dedup key is `rock_opportunity_id` (UNIQUE). One 
 | Collection | Slug | Purpose |
 | ---------- | ---- | ------- |
 | Outreach Projects | `outreach-projects` | Main collection — one item per opportunity |
-| Outreach Campus | `outreach-campus` | Campus single-ref filter |
-| Outreach Events | `outreach-events` | Event single-ref filter |
-| Outreach Categories | `outreach-categories` | Category single-ref filter |
-| Outreach Cities | `outreach-cities` | City single-ref filter |
+
+Note: Campus, Event, Category, City are **PlainText fields** on `outreach-projects` (not separate reference collections). The Spirit Church site is at the 20-collection CMS plan limit.
 
 **Field slugs in `outreach-projects`:**
 
@@ -66,23 +64,21 @@ Table: `outreach_projects` — dedup key is `rock_opportunity_id` (UNIQUE). One 
 | `project-type` | PlainText | project.project_type |
 | `signup-url` | Link | project.signup_url |
 | `is-active` | Switch | project.is_active |
-| `campus` | Ref → outreach-campus | campusMap lookup by name |
-| `event` | Ref → outreach-events | eventMap lookup by name |
-| `category` | Ref → outreach-categories | categoryMap lookup by name |
-| `city` | Ref → outreach-cities | cityMap lookup by name |
+| `campus` | PlainText | project.campus (string written directly) |
+| `event` | PlainText | project.event (string written directly) |
+| `category` | PlainText | project.category (string written directly) |
+| `city` | PlainText | project.city (string written directly) |
 
 ## Environment Variables
 
 | Variable | Notes |
 | -------- | ----- |
 | `ROCK_SIGNUP_GROUP_TYPE_ID` | GroupType ID for Sign-Up Groups in Rock |
-| `WEBFLOW_OUTREACH_COLLECTION_ID` | Main outreach-projects collection ID |
-| `WEBFLOW_OUTREACH_CAMPUS_COLLECTION_ID` | Reference collection |
-| `WEBFLOW_OUTREACH_EVENT_COLLECTION_ID` | Reference collection |
-| `WEBFLOW_OUTREACH_CATEGORY_COLLECTION_ID` | Reference collection |
-| `WEBFLOW_OUTREACH_CITY_COLLECTION_ID` | Reference collection |
+| `WEBFLOW_OUTREACH_COLLECTION_ID` | `6a28cbac65cb0f0593f53802` |
 
 Reuses: `CRON_SECRET`, `ROCK_API_URL`, `ROCK_REST_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `WEBFLOW_API_TOKEN`, `WEBFLOW_SITE_ID`
+
+Note: The 4 reference collection env vars (`WEBFLOW_OUTREACH_CAMPUS_COLLECTION_ID` etc.) are no longer needed — campus/event/category/city are PlainText fields.
 
 ## Triggering Manually
 
@@ -111,26 +107,28 @@ Expected response:
 | `IsActive=false`, `IsArchived=false` | Syncs `is-active: false` to Webflow. Item stays in CMS but filtered out on the public page. |
 | `IsArchived=true` | Hard delete from Webflow CMS and Supabase. |
 
-## Rock Attribute Keys (Unverified)
+## Rock Attribute Keys (Verified 2026-06-11)
 
-The following attribute key names in `rock-client.ts` are **guesses** — confirm against a live Rock API response before the first sync:
+All 7 attribute key names in `rock-client.ts` confirmed against live Rock API:
 
 `Semester`, `Event`, `Category`, `KidsWelcome`, `HandicapAccessible`, `ToolsSuppliesNeeded`, `ProjectType`
 
-Run to verify:
-```bash
-curl -s "https://rms.spiritchurch.co/api/Groups?$filter=GroupTypeId%20eq%20<ID>&$top=1&loadAttributes=simple" \
-  -H "Authorization-Token: <ROCK_REST_KEY>" | jq '.[] | .AttributeValues | keys'
-```
+## Webflow Site & Collection IDs
+
+| Resource | ID |
+| -------- | -- |
+| Site (spirit-church-az) | `68ae1c452c9ac726c7a745ee` |
+| `outreach-projects` collection | `6a28cbac65cb0f0593f53802` |
 
 ## Current Status
 
-- **Code:** Complete — 112/112 tests passing (Tasks 1–6 done, committed to main)
+- **Code:** Needs update — `webflow-client.ts` must be updated to write campus/event/category/city as PlainText strings (remove ref collection lookups)
+- **Tests:** 112/112 passing (will need updates after webflow-client.ts change)
 - **Cron:** Added to `vercel.json` (commit `3595df0`) — not yet deployed
 - **Supabase table:** Created
-- **Webflow collections:** Not yet created (needs Spirit Church Webflow account access)
-- **Vercel env vars:** Not yet added
-- **Deployment:** Pending Task 0 completion
+- **Webflow collection:** Created (2026-06-11) — `outreach-projects` with all 16 fields
+- **Vercel env vars:** Not yet added (only 2 new vars needed: `ROCK_SIGNUP_GROUP_TYPE_ID` + `WEBFLOW_OUTREACH_COLLECTION_ID`)
+- **Deployment:** Pending code update + env vars
 
 ---
 
@@ -158,9 +156,28 @@ curl -s "https://rms.spiritchurch.co/api/Groups?$filter=GroupTypeId%20eq%20<ID>&
 - `vercel.json` — added `/api/sync-outreach` cron entry
 
 **Next session — Task 0 remaining steps:**
-1. Create 5 Webflow collections in Spirit Church Webflow account (see field table above)
-2. Add 6 env vars to Vercel (ROCK_SIGNUP_GROUP_TYPE_ID + 5 Webflow collection IDs)
-3. Pull env locally: `vercel env pull --environment production .env.local`
-4. Verify Rock attribute key names via diagnostic curl
-5. Deploy: `vercel build --prod && vercel deploy --prebuilt --prod`
-6. Trigger manual sync and verify end-to-end
+1. ~~Create Webflow collection~~ ✓ Done 2026-06-11 (`outreach-projects` with all 16 fields)
+2. Update `webflow-client.ts` — remove ref collection lookups, write campus/event/category/city as PlainText strings directly
+3. Update tests in `outreach-webflow-client.test.ts` to match new field behavior
+4. Add 2 env vars to Vercel: `ROCK_SIGNUP_GROUP_TYPE_ID` + `WEBFLOW_OUTREACH_COLLECTION_ID` (`6a28cbac65cb0f0593f53802`)
+5. Pull env locally: `vercel env pull --environment production .env.local`
+6. Verify Rock attribute key names via diagnostic curl
+7. Deploy: `vercel build --prod && vercel deploy --prebuilt --prod`
+8. Trigger manual sync and verify end-to-end
+
+---
+
+### Session 02 (2026-06-11) — Webflow Collection
+
+**Goal:** Create Webflow CMS collection for Outreach Sync pipeline (Task 0, Step 1).
+
+**What happened:** Initially created collections on wrong site (Spirit Church Staging `68bf98e2590d4a39fb6f9bb8`). Correct site is `68ae1c452c9ac726c7a745ee`. After reconnecting Webflow MCP, hit the 20-collection CMS plan limit — couldn't create 4 reference collections. Changed architecture: campus/event/category/city are now PlainText fields on `outreach-projects` instead of Reference fields.
+
+**Solution:** Added all 16 fields to existing `outreach-projects` collection (`6a28cbac65cb0f0593f53802`) on correct site. Field slugs all match the schema.
+
+**Key decisions:**
+- campus/event/category/city changed from Ref to PlainText — Spirit Church site is at 20-collection CMS plan limit
+- Eliminates campusMap/eventMap/categoryMap/cityMap lookups in webflow-client.ts — simpler sync, string values written directly
+- Wrong-site collections (on `68bf98e2590d4a39fb6f9bb8`) must be manually deleted in Webflow Designer
+
+**Next:** Update `webflow-client.ts` to remove ref lookups, update tests, then add env vars.

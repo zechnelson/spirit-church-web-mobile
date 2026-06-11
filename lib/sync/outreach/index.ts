@@ -22,13 +22,7 @@ export async function fullOutreachSync(
   const webflow = new OutreachWebflowClient(
     env.WEBFLOW_API_TOKEN,
     env.WEBFLOW_SITE_ID,
-    env.WEBFLOW_OUTREACH_COLLECTION_ID,
-    {
-      campus: env.WEBFLOW_OUTREACH_CAMPUS_COLLECTION_ID,
-      event: env.WEBFLOW_OUTREACH_EVENT_COLLECTION_ID,
-      category: env.WEBFLOW_OUTREACH_CATEGORY_COLLECTION_ID,
-      city: env.WEBFLOW_OUTREACH_CITY_COLLECTION_ID,
-    }
+    env.WEBFLOW_OUTREACH_COLLECTION_ID
   );
 
   const duration = () => Math.round((Date.now() - startTime) / 1000);
@@ -56,8 +50,6 @@ export async function fullOutreachSync(
 
     // Stage 2: Supabase → Webflow (create + update + delete)
     log("--- Outreach Stage 2: Supabase → Webflow ---");
-    await webflow.initializeReferenceMaps();
-
     const supabaseProjects = await supabase.getAllProjects();
     const existingItems = await webflow.getExistingItems();
 

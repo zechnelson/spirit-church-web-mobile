@@ -2,20 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { OutreachWebflowClient } from "../sync/outreach/webflow-client";
 import type { OutreachProject } from "../sync/outreach/types";
 
-type RefCollectionIds = {
-  campus: string;
-  event: string;
-  category: string;
-  city: string;
-};
-
-const refIds: RefCollectionIds = {
-  campus: "campus-col-id",
-  event: "event-col-id",
-  category: "category-col-id",
-  city: "city-col-id",
-};
-
 let client: OutreachWebflowClient;
 
 const baseProject: OutreachProject = {
@@ -44,16 +30,7 @@ const baseProject: OutreachProject = {
 };
 
 beforeEach(() => {
-  client = new OutreachWebflowClient(
-    "test-token",
-    "site-id",
-    "collection-id",
-    refIds
-  );
-  client.campusMap = { "Chandler Campus": "campus-wf-1" };
-  client.eventMap = { "Serve Day": "event-wf-1" };
-  client.categoryMap = { "Food Prep & Distribution": "cat-wf-1" };
-  client.cityMap = { Tempe: "city-wf-1" };
+  client = new OutreachWebflowClient("test-token", "site-id", "collection-id");
 });
 
 describe("transformProjectForWebflow", () => {
@@ -99,36 +76,36 @@ describe("transformProjectForWebflow", () => {
     expect(fieldData["project-type"]).toBe("In-Person");
   });
 
-  it("maps campus reference ID from campusMap", () => {
+  it("maps campus as plain text string", () => {
     const { fieldData } = client.transformProjectForWebflow(baseProject);
-    expect(fieldData["campus"]).toBe("campus-wf-1");
+    expect(fieldData["campus"]).toBe("Chandler Campus");
   });
 
-  it("maps event reference ID from eventMap", () => {
+  it("maps event as plain text string", () => {
     const { fieldData } = client.transformProjectForWebflow(baseProject);
-    expect(fieldData["event"]).toBe("event-wf-1");
+    expect(fieldData["event"]).toBe("Serve Day");
   });
 
-  it("maps category reference ID from categoryMap", () => {
+  it("maps category as plain text string", () => {
     const { fieldData } = client.transformProjectForWebflow(baseProject);
-    expect(fieldData["category"]).toBe("cat-wf-1");
+    expect(fieldData["category"]).toBe("Food Prep & Distribution");
   });
 
-  it("maps city reference ID from cityMap", () => {
+  it("maps city as plain text string", () => {
     const { fieldData } = client.transformProjectForWebflow(baseProject);
-    expect(fieldData["city"]).toBe("city-wf-1");
+    expect(fieldData["city"]).toBe("Tempe");
   });
 
-  it("omits campus when not in map", () => {
-    client.campusMap = {};
-    const { fieldData } = client.transformProjectForWebflow(baseProject);
+  it("omits campus when null", () => {
+    const project = { ...baseProject, campus: null };
+    const { fieldData } = client.transformProjectForWebflow(project);
     expect(fieldData).not.toHaveProperty("campus");
   });
 
-  it("omits campus when campusMap is null", () => {
-    client.campusMap = null;
-    const { fieldData } = client.transformProjectForWebflow(baseProject);
-    expect(fieldData).not.toHaveProperty("campus");
+  it("omits city when null", () => {
+    const project = { ...baseProject, city: null };
+    const { fieldData } = client.transformProjectForWebflow(project);
+    expect(fieldData).not.toHaveProperty("city");
   });
 
   it("omits description when empty string", () => {

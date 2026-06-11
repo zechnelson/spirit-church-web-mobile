@@ -1,37 +1,16 @@
 import type { OutreachProject, WebflowOutreachItem } from "./types";
 import { log, logError } from "../utils";
 
-type ReferenceMap = Record<string, string>;
-
-type RefCollectionIds = {
-  campus: string;
-  event: string;
-  category: string;
-  city: string;
-};
-
 export class OutreachWebflowClient {
   private apiToken: string;
   private siteId: string;
   private collectionId: string;
-  private refCollectionIds: RefCollectionIds;
   private baseUrl = "https://api.webflow.com/v2";
 
-  campusMap: ReferenceMap | null = null;
-  eventMap: ReferenceMap | null = null;
-  categoryMap: ReferenceMap | null = null;
-  cityMap: ReferenceMap | null = null;
-
-  constructor(
-    apiToken: string,
-    siteId: string,
-    collectionId: string,
-    refCollectionIds: RefCollectionIds
-  ) {
+  constructor(apiToken: string, siteId: string, collectionId: string) {
     this.apiToken = apiToken;
     this.siteId = siteId;
     this.collectionId = collectionId;
-    this.refCollectionIds = refCollectionIds;
   }
 
   private get authHeaders() {
@@ -39,66 +18,6 @@ export class OutreachWebflowClient {
       Authorization: `Bearer ${this.apiToken}`,
       "Content-Type": "application/json",
     };
-  }
-
-  async fetchReferenceCollection(collectionId: string): Promise<ReferenceMap> {
-    const response = await fetch(
-      `${this.baseUrl}/collections/${collectionId}/items`,
-      {
-        headers: {
-          Authorization: `Bearer ${this.apiToken}`,
-          accept: "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to fetch reference collection ${collectionId}: ${response.status} - ${errorText}`
-      );
-    }
-
-    const data = await response.json();
-    const map: ReferenceMap = {};
-    for (const item of data.items ?? []) {
-      const name = item.fieldData?.name || item.fieldData?.Name;
-      if (name) map[name] = item.id;
-    }
-    return map;
-  }
-
-  async initializeReferenceMaps(): Promise<void> {
-    log("Initializing outreach reference collection mappings...");
-
-    const [campus, event, category, city] = await Promise.all([
-      this.fetchReferenceCollection(this.refCollectionIds.campus),
-      this.fetchReferenceCollection(this.refCollectionIds.event),
-      this.fetchReferenceCollection(this.refCollectionIds.category),
-      this.fetchReferenceCollection(this.refCollectionIds.city),
-    ]);
-
-    this.campusMap = campus;
-    this.eventMap = event;
-    this.categoryMap = category;
-    this.cityMap = city;
-
-    log(
-      `Loaded ${Object.keys(campus).length} campuses, ` +
-        `${Object.keys(event).length} events, ` +
-        `${Object.keys(category).length} categories, ` +
-        `${Object.keys(city).length} cities`
-    );
-  }
-
-  mapNameToId(name: string | null, map: ReferenceMap | null): string | null {
-    if (!name || !map) return null;
-    const id = map[name];
-    if (!id) {
-      log(`Warning: No matching Webflow item for value: ${name}`);
-      return null;
-    }
-    return id;
   }
 
   transformProjectForWebflow(
@@ -121,34 +40,10 @@ export class OutreachWebflowClient {
     if (project.tools_needed) fieldData["tools-needed"] = project.tools_needed;
     if (project.project_type) fieldData["project-type"] = project.project_type;
     if (project.signup_url) fieldData["signup-url"] = project.signup_url;
-
-    try {
-      const campusId = this.mapNameToId(project.campus, this.campusMap);
-      if (campusId) fieldData["campus"] = campusId;
-    } catch (e) {
-      log(`Warning: campus mapping failed for ${project.name}: ${(e as Error).message}`);
-    }
-
-    try {
-      const eventId = this.mapNameToId(project.event, this.eventMap);
-      if (eventId) fieldData["event"] = eventId;
-    } catch (e) {
-      log(`Warning: event mapping failed for ${project.name}: ${(e as Error).message}`);
-    }
-
-    try {
-      const categoryId = this.mapNameToId(project.category, this.categoryMap);
-      if (categoryId) fieldData["category"] = categoryId;
-    } catch (e) {
-      log(`Warning: category mapping failed for ${project.name}: ${(e as Error).message}`);
-    }
-
-    try {
-      const cityId = this.mapNameToId(project.city, this.cityMap);
-      if (cityId) fieldData["city"] = cityId;
-    } catch (e) {
-      log(`Warning: city mapping failed for ${project.name}: ${(e as Error).message}`);
-    }
+    if (project.campus) fieldData["campus"] = project.campus;
+    if (project.event) fieldData["event"] = project.event;
+    if (project.category) fieldData["category"] = project.category;
+    if (project.city) fieldData["city"] = project.city;
 
     return { fieldData };
   }

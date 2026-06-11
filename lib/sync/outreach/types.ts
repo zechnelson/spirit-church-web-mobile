@@ -34,8 +34,6 @@ export interface RockRawSignUpGroup {
   GroupTypeId: number;
   Campus?: { Name: string };
   AttributeValues?: {
-    // NOTE: verify these key names against live Rock API before implementing rock-client
-    // Run the diagnostic curl in Task 0 Step 5 first
     Semester?: AttributeValue;
     Event?: AttributeValue;
     Category?: AttributeValue;
@@ -87,10 +85,6 @@ export interface OutreachSyncEnv {
   WEBFLOW_API_TOKEN: string;
   WEBFLOW_SITE_ID: string;
   WEBFLOW_OUTREACH_COLLECTION_ID: string;
-  WEBFLOW_OUTREACH_CAMPUS_COLLECTION_ID: string;
-  WEBFLOW_OUTREACH_EVENT_COLLECTION_ID: string;
-  WEBFLOW_OUTREACH_CATEGORY_COLLECTION_ID: string;
-  WEBFLOW_OUTREACH_CITY_COLLECTION_ID: string;
   CRON_SECRET: string;
 }
 
