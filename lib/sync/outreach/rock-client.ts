@@ -15,6 +15,36 @@ export class OutreachRockClient {
     this.groupTypeId = groupTypeId;
   }
 
+  private async fetchIdKeyMap(
+    endpoint: string,
+    ids: number[]
+  ): Promise<Map<number, string>> {
+    if (ids.length === 0) return new Map();
+
+    const filter = ids.map((id) => `Id eq ${id}`).join(" or ");
+    const query = new URLSearchParams({ $filter: filter });
+
+    const response = await fetch(`${this.apiUrl}/${endpoint}?${query}`, {
+      headers: {
+        "Authorization-Token": this.restKey,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      log(`Warning: Failed to fetch IdKey map for ${endpoint}: ${response.status}`);
+      return new Map();
+    }
+
+    const items: { Id: number; IdKey?: string | null }[] = await response.json();
+    const map = new Map<number, string>();
+    for (const item of items) {
+      if (item.IdKey) map.set(item.Id, item.IdKey);
+    }
+    return map;
+  }
+
   async fetchSignUpGroups(): Promise<OutreachProject[]> {
     log(`Fetching Sign-Up Groups from Rock (GroupTypeId=${this.groupTypeId})...`);
 
@@ -42,9 +72,21 @@ export class OutreachRockClient {
     const rawGroups: RockRawSignUpGroup[] = await response.json();
     log(`Fetched ${rawGroups.length} Sign-Up Groups`);
 
+    // Rock strips IdKey from OData list responses — batch-fetch them separately
+    const groupIds = rawGroups.map((g) => g.Id);
+    const locationIds = rawGroups.flatMap((g) => g.GroupLocations?.map((l) => l.Id) ?? []);
+    const scheduleIds = rawGroups.flatMap((g) =>
+      g.GroupLocations?.flatMap((l) => l.Schedules?.map((s) => s.Id) ?? []) ?? []
+    );
+    const [groupIdKeys, locationIdKeys, scheduleIdKeys] = await Promise.all([
+      this.fetchIdKeyMap("Groups", groupIds),
+      this.fetchIdKeyMap("GroupLocations", locationIds),
+      this.fetchIdKeyMap("Schedules", scheduleIds),
+    ]);
+
     const projects: OutreachProject[] = [];
     for (const rawGroup of rawGroups) {
-      const project = this.transformProject(rawGroup);
+      const project = this.transformProject(rawGroup, groupIdKeys, locationIdKeys, scheduleIdKeys);
       if (project) {
         projects.push(project);
       } else {
@@ -55,7 +97,12 @@ export class OutreachRockClient {
     return projects;
   }
 
-  transformProject(rawGroup: RockRawSignUpGroup): OutreachProject | null {
+  transformProject(
+    rawGroup: RockRawSignUpGroup,
+    groupIdKeys?: Map<number, string>,
+    locationIdKeys?: Map<number, string>,
+    scheduleIdKeys?: Map<number, string>
+  ): OutreachProject | null {
     const opportunity = rawGroup.GroupLocations?.[0];
 
     if (!opportunity) {
@@ -64,9 +111,11 @@ export class OutreachRockClient {
 
     const schedule = opportunity.Schedules?.[0] ?? null;
 
-    const groupIdKey = rawGroup.IdKey;
-    const locationIdKey = opportunity.IdKey;
-    const scheduleIdKey = schedule?.IdKey;
+    const groupIdKey = rawGroup.IdKey ?? groupIdKeys?.get(rawGroup.Id) ?? null;
+    const locationIdKey = opportunity.IdKey ?? locationIdKeys?.get(opportunity.Id) ?? null;
+    const scheduleIdKey = schedule
+      ? (schedule.IdKey ?? scheduleIdKeys?.get(schedule.Id) ?? null)
+      : null;
 
     const signupUrl =
       groupIdKey && locationIdKey && scheduleIdKey

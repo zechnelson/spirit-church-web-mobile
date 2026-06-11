@@ -122,13 +122,31 @@ All 7 attribute key names in `rock-client.ts` confirmed against live Rock API:
 
 ## Current Status
 
-- **Code:** Needs update — `webflow-client.ts` must be updated to write campus/event/category/city as PlainText strings (remove ref collection lookups)
-- **Tests:** 112/112 passing (will need updates after webflow-client.ts change)
-- **Cron:** Added to `vercel.json` (commit `3595df0`) — not yet deployed
-- **Supabase table:** Created
-- **Webflow collection:** Created (2026-06-11) — `outreach-projects` with all 16 fields
-- **Vercel env vars:** Not yet added (only 2 new vars needed: `ROCK_SIGNUP_GROUP_TYPE_ID` + `WEBFLOW_OUTREACH_COLLECTION_ID`)
-- **Deployment:** Pending code update + env vars
+- **Code:** Complete and deployed
+- **Tests:** 46/46 passing
+- **Cron:** Active in `vercel.json` — deployed
+- **Supabase table:** Created and populated (2 rows from first sync)
+- **Webflow collection:** Live — `outreach-projects` with all 18 fields, 2 items published
+- **Vercel env vars:** All added (ROCK_SIGNUP_GROUP_TYPE_ID=37, WEBFLOW_OUTREACH_COLLECTION_ID, CRON_SECRET updated for both sync routes)
+- **Deployment:** Live — full pipeline verified end-to-end 2026-06-11
+
+---
+
+## Rock IdKey Batch-Fetch (Critical)
+
+Rock RMS strips `IdKey` (a computed property) from **all OData list endpoint responses** — this affects Groups, GroupLocations, and Schedules alike. If IdKey is null for any of the three, `signup_url` will be null.
+
+**Solution:** After the main groups fetch, run 3 parallel batch queries to retrieve IdKeys:
+
+```
+Groups?$filter=Id eq X or Id eq Y or ...
+GroupLocations?$filter=Id eq X or Id eq Y or ...
+Schedules?$filter=Id eq X or Id eq Y or ...
+```
+
+Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$select` results too. Query with `$filter` only and Rock returns full objects including IdKey.
+
+`transformProject` uses `rawData.IdKey ?? batchMap?.get(id) ?? null` fallback pattern, so if Rock ever adds IdKey to list responses this code gracefully stops using the batch maps.
 
 ---
 
@@ -181,3 +199,29 @@ All 7 attribute key names in `rock-client.ts` confirmed against live Rock API:
 - Wrong-site collections (on `68bf98e2590d4a39fb6f9bb8`) must be manually deleted in Webflow Designer
 
 **Next:** Update `webflow-client.ts` to remove ref lookups, update tests, then add env vars.
+
+---
+
+### Session 03 (2026-06-11) — Deployment + Pipeline Verification
+
+**Goal:** Deploy outreach sync, run full end-to-end pipeline test.
+
+**What happened:**
+1. Deployed code (post webflow-client.ts + types + index + route.ts refactor from Session 02)
+2. Added env vars to Vercel: `ROCK_SIGNUP_GROUP_TYPE_ID=37`, `WEBFLOW_OUTREACH_COLLECTION_ID=6a28cbac65cb0f0593f53802`, and new `CRON_SECRET`
+3. Hit CRON_SECRET mismatch (sensitive env vars not pulled by `vercel env pull`) — added manually to .env.local
+4. Hit deploy-bakes-env-vars issue — CRON_SECRET update required a redeploy to take effect
+5. First sync succeeded: 2 items created in Supabase and Webflow, published — but `signup_url` was null for both
+6. **Root cause:** Rock strips IdKey from OData list responses (Groups, GroupLocations, Schedules). `$select=Id,IdKey` also doesn't work — computed property stripped there too.
+7. **Fix:** Added `fetchIdKeyMap` private method; after main groups fetch, batch-fetch all 3 entity IdKeys in parallel (no `$select`, just `$filter`). Updated `transformProject` to accept 3 optional maps and use `rawData.IdKey ?? batchMap?.get(id) ?? null`.
+8. Redeployed, re-triggered manual sync — both items updated with correct signup URLs.
+9. Verified in Webflow: both items have correct `signup-url`, all fields populated, `isDraft: false`, `lastPublished` set.
+
+**Key decisions:**
+- `fetchIdKeyMap` degrades gracefully — if batch fetch fails (non-ok), returns empty map and signup_url falls back to null (logged as warning, not thrown)
+- `transformProject` signature keeps optional map params so existing unit tests (which set IdKey directly in test data) continue to pass without changes
+
+**Files modified:**
+- `lib/sync/outreach/rock-client.ts` — added fetchIdKeyMap, batch-fetch all 3 entity IdKeys, updated transformProject signature
+
+**Status after session:** Full pipeline live and verified. ROCK_SIGNUP_GROUP_TYPE_ID=37 confirmed.
