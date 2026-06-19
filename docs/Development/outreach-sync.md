@@ -127,12 +127,13 @@ All 7 attribute key names in `rock-client.ts` confirmed against live Rock API:
 ## Current Status
 
 - **Code:** Complete and deployed
-- **Tests:** 46/46 passing
+- **Tests:** 127/127 passing
 - **Cron:** Active in `vercel.json` — deployed
-- **Supabase table:** Created and populated (2 rows from first sync)
-- **Webflow collection:** Live — `outreach-projects` with all 18 fields, 2 items published
+- **Supabase table:** Created and populated (3 rows from latest sync)
+- **Webflow collection:** Live — `outreach-projects` with MultiRef fields for campus-2/event-2/category-2/city-2
+- **Reference collections:** Live — 4 collections auto-populated on each sync run (campus, event, category, city)
 - **Vercel env vars:** All added (ROCK_SIGNUP_GROUP_TYPE_ID=37, WEBFLOW_OUTREACH_COLLECTION_ID, CRON_SECRET updated for both sync routes)
-- **Deployment:** Live — full pipeline verified end-to-end 2026-06-11
+- **Deployment:** Live — full pipeline verified end-to-end 2026-06-19 (MultiRef fields)
 
 ---
 
@@ -164,22 +165,23 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 - Created 4 new Webflow reference collections (outreach-campuses, outreach-events, outreach-categories, outreach-cities)
 - Deleted 4 PlainText fields from outreach-projects; added 4 MultiRef fields (Webflow auto-assigned `-2` suffix to field slugs: `campus-2`, `event-2`, `category-2`, `city-2`)
 - Added `fetchReferenceCollection`, `mapValuesToIds`, `upsertReferenceItem`, `syncReferenceCollection`, `initializeReferenceMaps` to `OutreachWebflowClient`
-- Each sync run auto-upserts missing values into the reference collections and immediately publishes new items
+- Each sync run auto-upserts missing values into the reference collections; `publishSite` in Stage 3 covers the site rebuild
 - Added `initializeReferenceMaps(supabaseProjects)` call in `index.ts` before Stage 2
 
 **Key decisions:**
 - `initializeReferenceMaps` uses sequential awaits (not `Promise.all`) — required by test mock design; works correctly with Webflow API
-- `upsertReferenceItem` publishes newly created reference items immediately after creation (so they're live before the parent outreach-projects items are published)
+- Reference collection items remain `isDraft: true` — Webflow's `publishItems` endpoint returns 404 for reference-only collections (no CMS pages). This is expected: items are accessible via API regardless of draft state, and `publishSite` in Stage 3 covers the rebuild.
 - Empty slug fallback: if name produces empty string from slug regex, falls back to `ref-${Date.now()}`
 - Field slug suffix `-2` is permanent (Webflow behavior after recent same-name deletion); front-end bindings must use `campus-2` etc.
+- Filter `v != null` (loose equality) used in `initializeReferenceMaps` to catch both null and undefined values from Supabase
 
 **Files Modified:**
 - `lib/sync/outreach/webflow-client.ts` — new reference collection methods, updated transform
 - `lib/sync/outreach/index.ts` — added initializeReferenceMaps call
-- `lib/__tests__/outreach-webflow-client.test.ts` — updated and expanded tests (37 tests)
+- `lib/__tests__/outreach-webflow-client.test.ts` — updated and expanded tests
 - `docs/Development/outreach-sync.md` — updated collection table and field schema
 
-**Status:** Deployed and verified — 129/129 tests passing
+**Status:** Deployed and verified — 127/127 tests passing
 
 ---
 
