@@ -76,36 +76,53 @@ describe("transformProjectForWebflow", () => {
     expect(fieldData["project-type"]).toBe("In-Person");
   });
 
-  it("maps campus as plain text string", () => {
+  it("maps campus as MultiRef id array when campusMap is set", () => {
+    client.campusMap = { "Chandler Campus": "campus-id-1" };
     const { fieldData } = client.transformProjectForWebflow(baseProject);
-    expect(fieldData["campus"]).toBe("Chandler Campus");
+    expect(fieldData["campus-2"]).toEqual(["campus-id-1"]);
   });
 
-  it("maps event as plain text string", () => {
+  it("maps event as MultiRef id array when eventMap is set", () => {
+    client.eventMap = { "Serve Day": "event-id-1" };
     const { fieldData } = client.transformProjectForWebflow(baseProject);
-    expect(fieldData["event"]).toBe("Serve Day");
+    expect(fieldData["event-2"]).toEqual(["event-id-1"]);
   });
 
-  it("maps category as plain text string", () => {
+  it("maps category as MultiRef id array when categoryMap is set", () => {
+    client.categoryMap = { "Food Prep & Distribution": "category-id-1" };
     const { fieldData } = client.transformProjectForWebflow(baseProject);
-    expect(fieldData["category"]).toBe("Food Prep & Distribution");
+    expect(fieldData["category-2"]).toEqual(["category-id-1"]);
   });
 
-  it("maps city as plain text string", () => {
+  it("maps city as MultiRef id array when cityMap is set", () => {
+    client.cityMap = { "Tempe": "city-id-1" };
     const { fieldData } = client.transformProjectForWebflow(baseProject);
-    expect(fieldData["city"]).toBe("Tempe");
+    expect(fieldData["city-2"]).toEqual(["city-id-1"]);
   });
 
-  it("omits campus when null", () => {
+  it("omits campus from fieldData when campusMap is null", () => {
+    client.campusMap = null;
+    const { fieldData } = client.transformProjectForWebflow(baseProject);
+    expect(fieldData).not.toHaveProperty("campus-2");
+  });
+
+  it("omits campus from fieldData when project.campus is null", () => {
+    client.campusMap = { "Chandler Campus": "campus-id-1" };
     const project = { ...baseProject, campus: null };
     const { fieldData } = client.transformProjectForWebflow(project);
-    expect(fieldData).not.toHaveProperty("campus");
+    expect(fieldData).not.toHaveProperty("campus-2");
   });
 
-  it("omits city when null", () => {
-    const project = { ...baseProject, city: null };
-    const { fieldData } = client.transformProjectForWebflow(project);
-    expect(fieldData).not.toHaveProperty("city");
+  it("omits campus from fieldData when value has no map entry", () => {
+    client.campusMap = {};
+    const { fieldData } = client.transformProjectForWebflow(baseProject);
+    expect(fieldData).not.toHaveProperty("campus-2");
+  });
+
+  it("omits city from fieldData when cityMap is null", () => {
+    client.cityMap = null;
+    const { fieldData } = client.transformProjectForWebflow(baseProject);
+    expect(fieldData).not.toHaveProperty("city-2");
   });
 
   it("omits description when empty string", () => {
@@ -124,6 +141,192 @@ describe("transformProjectForWebflow", () => {
     const project = { ...baseProject, signup_url: null };
     const { fieldData } = client.transformProjectForWebflow(project);
     expect(fieldData).not.toHaveProperty("signup-url");
+  });
+});
+
+describe("mapValuesToIds", () => {
+  it("returns ids for known values", () => {
+    const map = { Gilbert: "id-1", Chandler: "id-2" };
+    expect(client.mapValuesToIds(["Gilbert", "Chandler"], map)).toEqual(["id-1", "id-2"]);
+  });
+
+  it("skips unknown values without throwing", () => {
+    const map = { Gilbert: "id-1" };
+    expect(client.mapValuesToIds(["Gilbert", "Unknown"], map)).toEqual(["id-1"]);
+  });
+
+  it("returns empty array for empty input", () => {
+    expect(client.mapValuesToIds([], {})).toEqual([]);
+  });
+});
+
+describe("fetchReferenceCollection", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("builds name→id map from collection items", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [
+          { id: "id-1", fieldData: { name: "Gilbert" } },
+          { id: "id-2", fieldData: { name: "Chandler" } },
+        ],
+      }),
+    }));
+
+    const map = await client.fetchReferenceCollection("col-id");
+    expect(map).toEqual({ Gilbert: "id-1", Chandler: "id-2" });
+  });
+
+  it("throws when response is not ok", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => "Unauthorized",
+    }));
+
+    await expect(client.fetchReferenceCollection("col-id")).rejects.toThrow("401");
+  });
+});
+
+describe("upsertReferenceItem", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("POSTs to the collection and returns the new item id", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "new-id-1" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const id = await client.upsertReferenceItem("col-id", "Gilbert");
+    expect(id).toBe("new-id-1");
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.webflow.com/v2/collections/col-id/items",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"name":"Gilbert"'),
+      })
+    );
+  });
+
+  it("throws when POST fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () => "Bad Request",
+    }));
+
+    await expect(client.upsertReferenceItem("col-id", "Gilbert")).rejects.toThrow("400");
+  });
+});
+
+describe("syncReferenceCollection", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("returns existing map when all values already exist", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [{ id: "id-1", fieldData: { name: "Gilbert" } }],
+      }),
+    }));
+
+    const map = await client.syncReferenceCollection("col-id", new Set(["Gilbert"]));
+    expect(map).toEqual({ Gilbert: "id-1" });
+  });
+
+  it("upserts missing values and adds them to the map", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ items: [{ id: "id-1", fieldData: { name: "Gilbert" } }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "id-2" }),
+      });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const map = await client.syncReferenceCollection("col-id", new Set(["Gilbert", "Chandler"]));
+    expect(map).toEqual({ Gilbert: "id-1", Chandler: "id-2" });
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("skips a value gracefully when upsert fails", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ items: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => "Server Error",
+      });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const map = await client.syncReferenceCollection("col-id", new Set(["Gilbert"]));
+    expect(map).toEqual({});
+  });
+});
+
+describe("initializeReferenceMaps", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("populates all 4 maps from project data", async () => {
+    const projects: OutreachProject[] = [
+      { ...baseProject, campus: "Chandler Campus", event: "Serve Day", category: "Food Prep & Distribution", city: "Tempe" },
+    ];
+
+    // 4 fetchReferenceCollection calls return empty → then 4 upsertReferenceItem calls
+    const mockFetch = vi.fn()
+      // fetch campuses collection
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+      // upsert "Chandler Campus"
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "campus-1" }) })
+      // fetch events collection
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+      // upsert "Serve Day"
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "event-1" }) })
+      // fetch categories collection
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+      // upsert "Food Prep & Distribution"
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "cat-1" }) })
+      // fetch cities collection
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+      // upsert "Tempe"
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "city-1" }) });
+
+    vi.stubGlobal("fetch", mockFetch);
+
+    await client.initializeReferenceMaps(projects);
+
+    expect(client.campusMap).toEqual({ "Chandler Campus": "campus-1" });
+    expect(client.eventMap).toEqual({ "Serve Day": "event-1" });
+    expect(client.categoryMap).toEqual({ "Food Prep & Distribution": "cat-1" });
+    expect(client.cityMap).toEqual({ "Tempe": "city-1" });
+  });
+
+  it("ignores null values when collecting unique values", async () => {
+    const projects: OutreachProject[] = [
+      { ...baseProject, campus: null, event: null, category: null, city: null },
+    ];
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [] }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    await client.initializeReferenceMaps(projects);
+
+    // 4 fetchReferenceCollection calls, 0 upserts
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+    expect(client.campusMap).toEqual({});
+    expect(client.eventMap).toEqual({});
+    expect(client.categoryMap).toEqual({});
+    expect(client.cityMap).toEqual({});
   });
 });
 
