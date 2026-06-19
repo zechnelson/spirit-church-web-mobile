@@ -9,7 +9,7 @@ const baseProject: OutreachProject = {
   rock_opportunity_id: 200,
   rock_schedule_id: 300,
   name: "Feed My Starving Children",
-  slug: "feed-my-starving-children",
+  slug: "200",
   description: "Help pack meals",
   schedule_display: "Once at 7/11/2026 9:00 AM",
   schedule_datetime: "2026-07-11T09:00:00",
@@ -37,7 +37,7 @@ describe("transformProjectForWebflow", () => {
   it("maps name, slug, and rock IDs", () => {
     const { fieldData } = client.transformProjectForWebflow(baseProject);
     expect(fieldData["name"]).toBe("Feed My Starving Children");
-    expect(fieldData["slug"]).toBe("feed-my-starving-children");
+    expect(fieldData["slug"]).toBe("200");
     expect(fieldData["rock-group-id"]).toBe(100);
     expect(fieldData["rock-opportunity-id"]).toBe(200);
   });

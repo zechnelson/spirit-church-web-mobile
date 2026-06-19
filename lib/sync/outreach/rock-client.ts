@@ -1,5 +1,5 @@
 import type { RockRawSignUpGroup, OutreachProject } from "./types";
-import { slugify, log } from "../utils";
+import { log } from "../utils";
 
 const RMS_BASE_URL = "https://rms.spiritchurch.co";
 
@@ -135,7 +135,7 @@ export class OutreachRockClient {
       rock_opportunity_id: opportunity.Id,
       rock_schedule_id: schedule?.Id ?? null,
       name: rawGroup.Name,
-      slug: slugify(rawGroup.Name),
+      slug: String(opportunity.Id),
       description: rawGroup.Description ?? "",
       schedule_display: schedule?.Description ?? null,
       schedule_datetime: schedule?.NextStartDateTime ?? null,

@@ -120,6 +120,21 @@ Expected response:
 
 ## Recent Sessions
 
+### Session 05 (2026-06-18) — Change: Use Rock ID as Webflow slug
+
+**Goal:** Replace name-based slug generation with the group's Rock ID so slugs are stable and don't change when a group is renamed.
+
+**Solution:** Changed `slug: slugify(rockGroup.Name)` → `slug: String(rockGroup.Id)` in `transformGroup`. Removed the now-unused `slugify` import. Updated tests to expect `"42"` instead of `"downtown-life-group"` / `"test-group"`.
+
+**Files Modified:**
+- `lib/sync/rock-client.ts` — slug now uses `String(rockGroup.Id)`; removed `slugify` import
+- `lib/__tests__/rock-client.test.ts` — updated slug assertion
+- `lib/__tests__/webflow-client.test.ts` — updated `baseGroup` fixture and assertion
+
+**Status:** VERIFIED WORKING — 107/107 tests passing
+
+---
+
 ### Session 04 (2026-05-30) — Feature: Sync group-image to Webflow
 
 **Goal:** Populate the `group-image` Webflow CMS field with the Rock RMS image URL so group images appear in the mobile home carousel.

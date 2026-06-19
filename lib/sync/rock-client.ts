@@ -1,6 +1,5 @@
 import type { RockRawGroup, SyncGroup } from "./types";
 import {
-  slugify,
   convertTo12Hour,
   parseMultiSelectAttribute,
   getImageUrl,
@@ -76,7 +75,7 @@ export class RockRMSClient {
     return {
       rock_id: rockGroup.Id,
       name: rockGroup.Name,
-      slug: slugify(rockGroup.Name),
+      slug: String(rockGroup.Id),
       description: rockGroup.Description ?? "",
       campus: rockGroup.Campus?.Name ?? null,
       campus_id: rockGroup.CampusId ?? null,

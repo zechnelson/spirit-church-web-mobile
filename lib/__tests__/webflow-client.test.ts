@@ -7,7 +7,7 @@ let client: WebflowClient;
 const baseGroup: SyncGroup = {
   rock_id: 42,
   name: "Test Group",
-  slug: "test-group",
+  slug: "42",
   description: "A group",
   campus: "Downtown",
   campus_id: 1,
@@ -46,7 +46,7 @@ describe("transformGroupForWebflow", () => {
   it("maps name, slug, and rock-id", () => {
     const { fieldData } = client.transformGroupForWebflow(baseGroup);
     expect(fieldData["name"]).toBe("Test Group");
-    expect(fieldData["slug"]).toBe("test-group");
+    expect(fieldData["slug"]).toBe("42");
     expect(fieldData["rock-id"]).toBe(42);
   });
 

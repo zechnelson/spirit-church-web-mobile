@@ -57,7 +57,7 @@ describe("transformProject", () => {
     expect(result!.rock_opportunity_id).toBe(200);
     expect(result!.rock_schedule_id).toBe(300);
     expect(result!.name).toBe("Feed My Starving Children");
-    expect(result!.slug).toBe("feed-my-starving-children");
+    expect(result!.slug).toBe("200");
     expect(result!.description).toBe("Help pack meals");
     expect(result!.is_active).toBe(true);
     expect(result!.is_archived).toBe(false);

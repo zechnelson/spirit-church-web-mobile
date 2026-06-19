@@ -26,7 +26,7 @@ describe("transformGroup", () => {
 
     expect(result.rock_id).toBe(42);
     expect(result.name).toBe("Downtown Life Group");
-    expect(result.slug).toBe("downtown-life-group");
+    expect(result.slug).toBe("42");
     expect(result.meeting_time).toBe("6:00 PM");
     expect(result.schedule_description).toBe("Tuesdays at 6pm");
     expect(result.registration_url).toBe(
