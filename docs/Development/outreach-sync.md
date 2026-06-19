@@ -40,11 +40,15 @@ Table: `outreach_projects` — dedup key is `rock_opportunity_id` (UNIQUE). One 
 
 ## Webflow Collections
 
-| Collection | Slug | Purpose |
-| ---------- | ---- | ------- |
-| Outreach Projects | `outreach-projects` | Main collection — one item per opportunity |
+| Collection | Slug | ID | Purpose |
+| ---------- | ---- | -- | ------- |
+| Outreach Projects | `outreach-projects` | `6a28cbac65cb0f0593f53802` | Main collection — one item per opportunity |
+| Outreach Campuses | `outreach-campuses` | `6a34b321383e05c75c39e00a` | Campus filter reference collection |
+| Outreach Events | `outreach-events` | `6a34b3227f7a37ca726a218f` | Event filter reference collection |
+| Outreach Categories | `outreach-categories` | `6a34b32342f56dbdad8ff50b` | Category filter reference collection |
+| Outreach Cities | `outreach-cities` | `6a34b3248360e1ed0c7190e6` | City filter reference collection |
 
-Note: Campus, Event, Category, City are **PlainText fields** on `outreach-projects` (not separate reference collections). The Spirit Church site is at the 20-collection CMS plan limit.
+Note: Campus, Event, Category, City are **MultiRef fields** on `outreach-projects` pointing to the 4 reference collections above. The sync auto-upserts missing values into those collections on every run and immediately publishes new reference items. Webflow auto-assigned `-2` suffix to the MultiRef field slugs (e.g., `campus-2`) because the old PlainText slugs were recently deleted.
 
 **Field slugs in `outreach-projects`:**
 
@@ -64,10 +68,10 @@ Note: Campus, Event, Category, City are **PlainText fields** on `outreach-projec
 | `project-type` | PlainText | project.project_type |
 | `signup-url` | Link | project.signup_url |
 | `is-active` | Switch | project.is_active |
-| `campus` | PlainText | project.campus (string written directly) |
-| `event` | PlainText | project.event (string written directly) |
-| `category` | PlainText | project.category (string written directly) |
-| `city` | PlainText | project.city (string written directly) |
+| `campus-2` | MultiRef | project.campus → outreach-campuses collection (auto-upserted) |
+| `event-2` | MultiRef | project.event → outreach-events collection (auto-upserted) |
+| `category-2` | MultiRef | project.category → outreach-categories collection (auto-upserted) |
+| `city-2` | MultiRef | project.city → outreach-cities collection (auto-upserted) |
 
 ## Environment Variables
 
@@ -151,6 +155,33 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 ---
 
 ## Recent Sessions
+
+### Session 05 (2026-06-19) — Feature: MultiRef fields for campus/event/category/city filtering
+
+**Goal:** Replace PlainText campus/event/category/city fields with MultiRef fields to enable proper Webflow CMS filtering on the public outreach page.
+
+**Solution:**
+- Created 4 new Webflow reference collections (outreach-campuses, outreach-events, outreach-categories, outreach-cities)
+- Deleted 4 PlainText fields from outreach-projects; added 4 MultiRef fields (Webflow auto-assigned `-2` suffix to field slugs: `campus-2`, `event-2`, `category-2`, `city-2`)
+- Added `fetchReferenceCollection`, `mapValuesToIds`, `upsertReferenceItem`, `syncReferenceCollection`, `initializeReferenceMaps` to `OutreachWebflowClient`
+- Each sync run auto-upserts missing values into the reference collections and immediately publishes new items
+- Added `initializeReferenceMaps(supabaseProjects)` call in `index.ts` before Stage 2
+
+**Key decisions:**
+- `initializeReferenceMaps` uses sequential awaits (not `Promise.all`) — required by test mock design; works correctly with Webflow API
+- `upsertReferenceItem` publishes newly created reference items immediately after creation (so they're live before the parent outreach-projects items are published)
+- Empty slug fallback: if name produces empty string from slug regex, falls back to `ref-${Date.now()}`
+- Field slug suffix `-2` is permanent (Webflow behavior after recent same-name deletion); front-end bindings must use `campus-2` etc.
+
+**Files Modified:**
+- `lib/sync/outreach/webflow-client.ts` — new reference collection methods, updated transform
+- `lib/sync/outreach/index.ts` — added initializeReferenceMaps call
+- `lib/__tests__/outreach-webflow-client.test.ts` — updated and expanded tests (37 tests)
+- `docs/Development/outreach-sync.md` — updated collection table and field schema
+
+**Status:** Deployed and verified — 129/129 tests passing
+
+---
 
 ### Session 04 (2026-06-18) — Change: Use Rock opportunity ID as Webflow slug
 
