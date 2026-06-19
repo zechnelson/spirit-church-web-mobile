@@ -51,6 +51,10 @@ export async function fullOutreachSync(
     // Stage 2: Supabase → Webflow (create + update + delete)
     log("--- Outreach Stage 2: Supabase → Webflow ---");
     const supabaseProjects = await supabase.getAllProjects();
+
+    // Auto-upsert any new campus/event/category/city values into reference collections
+    await webflow.initializeReferenceMaps(supabaseProjects);
+
     const existingItems = await webflow.getExistingItems();
 
     const existingMap = new Map(
