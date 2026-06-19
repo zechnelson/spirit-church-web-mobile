@@ -72,7 +72,8 @@ export class OutreachWebflowClient {
   }
 
   async upsertReferenceItem(collectionId: string, name: string): Promise<string> {
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const rawSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const slug = rawSlug || `ref-${Date.now()}`;
 
     const response = await fetch(
       `${this.baseUrl}/collections/${collectionId}/items`,
@@ -94,6 +95,20 @@ export class OutreachWebflowClient {
     if (!data.id) {
       throw new Error(`Created reference item "${name}" but no id in response`);
     }
+
+    // Publish immediately so it's visible on the live site
+    const publishResponse = await fetch(
+      `${this.baseUrl}/collections/${collectionId}/items/publish`,
+      {
+        method: "POST",
+        headers: this.authHeaders,
+        body: JSON.stringify({ itemIds: [data.id] }),
+      }
+    );
+    if (!publishResponse.ok) {
+      log(`Warning: Created reference item "${name}" but failed to publish it`);
+    }
+
     return data.id;
   }
 
@@ -121,10 +136,10 @@ export class OutreachWebflowClient {
   async initializeReferenceMaps(projects: OutreachProject[]): Promise<void> {
     log("Initializing outreach reference collection mappings...");
 
-    const campuses = new Set(projects.map((p) => p.campus).filter((v): v is string => v !== null));
-    const events = new Set(projects.map((p) => p.event).filter((v): v is string => v !== null));
-    const categories = new Set(projects.map((p) => p.category).filter((v): v is string => v !== null));
-    const cities = new Set(projects.map((p) => p.city).filter((v): v is string => v !== null));
+    const campuses = new Set(projects.map((p) => p.campus).filter((v): v is string => v != null));
+    const events = new Set(projects.map((p) => p.event).filter((v): v is string => v != null));
+    const categories = new Set(projects.map((p) => p.category).filter((v): v is string => v != null));
+    const cities = new Set(projects.map((p) => p.city).filter((v): v is string => v != null));
 
     const campusMap = await this.syncReferenceCollection(this.campusesCollectionId, campuses);
     const eventMap = await this.syncReferenceCollection(this.eventsCollectionId, events);

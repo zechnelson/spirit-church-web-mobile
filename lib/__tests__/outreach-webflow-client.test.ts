@@ -193,10 +193,12 @@ describe("upsertReferenceItem", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("POSTs to the collection and returns the new item id", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: "new-id-1" }),
-    });
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "new-id-1" }),
+      })
+      .mockResolvedValueOnce({ ok: true }); // publish call
     vi.stubGlobal("fetch", mockFetch);
 
     const id = await client.upsertReferenceItem("col-id", "Gilbert");
@@ -208,6 +210,40 @@ describe("upsertReferenceItem", () => {
         body: expect.stringContaining('"name":"Gilbert"'),
       })
     );
+  });
+
+  it("publishes the item after creating it", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "new-id-1" }),
+      })
+      .mockResolvedValueOnce({ ok: true }); // publish call
+    vi.stubGlobal("fetch", mockFetch);
+
+    await client.upsertReferenceItem("col-id", "Gilbert");
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenNthCalledWith(2,
+      "https://api.webflow.com/v2/collections/col-id/items/publish",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"new-id-1"'),
+      })
+    );
+  });
+
+  it("returns the id even if publish fails", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "new-id-2" }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 500 }); // publish fails
+    vi.stubGlobal("fetch", mockFetch);
+
+    const id = await client.upsertReferenceItem("col-id", "Mesa");
+    expect(id).toBe("new-id-2"); // still returns the id
   });
 
   it("throws when POST fails", async () => {
@@ -245,12 +281,13 @@ describe("syncReferenceCollection", () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ id: "id-2" }),
-      });
+      })
+      .mockResolvedValueOnce({ ok: true }); // publish call for "Chandler"
     vi.stubGlobal("fetch", mockFetch);
 
     const map = await client.syncReferenceCollection("col-id", new Set(["Gilbert", "Chandler"]));
     expect(map).toEqual({ Gilbert: "id-1", Chandler: "id-2" });
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
   });
 
   it("skips a value gracefully when upsert fails", async () => {
@@ -279,24 +316,32 @@ describe("initializeReferenceMaps", () => {
       { ...baseProject, campus: "Chandler Campus", event: "Serve Day", category: "Food Prep & Distribution", city: "Tempe" },
     ];
 
-    // 4 fetchReferenceCollection calls return empty → then 4 upsertReferenceItem calls
+    // 4 fetchReferenceCollection calls return empty → then 4 upsertReferenceItem calls (each with a publish follow-up)
     const mockFetch = vi.fn()
       // fetch campuses collection
       .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
       // upsert "Chandler Campus"
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "campus-1" }) })
+      // publish "Chandler Campus"
+      .mockResolvedValueOnce({ ok: true })
       // fetch events collection
       .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
       // upsert "Serve Day"
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "event-1" }) })
+      // publish "Serve Day"
+      .mockResolvedValueOnce({ ok: true })
       // fetch categories collection
       .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
       // upsert "Food Prep & Distribution"
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "cat-1" }) })
+      // publish "Food Prep & Distribution"
+      .mockResolvedValueOnce({ ok: true })
       // fetch cities collection
       .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
       // upsert "Tempe"
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "city-1" }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "city-1" }) })
+      // publish "Tempe"
+      .mockResolvedValueOnce({ ok: true });
 
     vi.stubGlobal("fetch", mockFetch);
 
@@ -306,6 +351,24 @@ describe("initializeReferenceMaps", () => {
     expect(client.eventMap).toEqual({ "Serve Day": "event-1" });
     expect(client.categoryMap).toEqual({ "Food Prep & Distribution": "cat-1" });
     expect(client.cityMap).toEqual({ "Tempe": "city-1" });
+  });
+
+  it("ignores undefined values (not just null) when collecting unique values", async () => {
+    const projects = [
+      { ...baseProject, campus: undefined as unknown as null, event: undefined as unknown as null, category: undefined as unknown as null, city: undefined as unknown as null },
+    ];
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [] }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    await client.initializeReferenceMaps(projects);
+
+    // 4 fetchReferenceCollection calls, 0 upserts (undefined values were filtered out)
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+    expect(client.campusMap).toEqual({});
   });
 
   it("ignores null values when collecting unique values", async () => {
