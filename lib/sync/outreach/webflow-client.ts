@@ -96,19 +96,6 @@ export class OutreachWebflowClient {
       throw new Error(`Created reference item "${name}" but no id in response`);
     }
 
-    // Publish immediately so it's visible on the live site
-    const publishResponse = await fetch(
-      `${this.baseUrl}/collections/${collectionId}/items/publish`,
-      {
-        method: "POST",
-        headers: this.authHeaders,
-        body: JSON.stringify({ itemIds: [data.id] }),
-      }
-    );
-    if (!publishResponse.ok) {
-      log(`Warning: Created reference item "${name}" but failed to publish it`);
-    }
-
     return data.id;
   }
 
