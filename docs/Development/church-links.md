@@ -74,6 +74,20 @@ Run `npm test` to verify all 14 unit tests pass.
 
 ## Recent Sessions
 
+### Session 07 (2026-06-22) — Fix missing Sunday card background images
+
+**Goal/Problem:** Connect card background image not appearing in production.
+
+**Solution:** Both Sunday card images (`connect-card-bg.png`, `salvation-card-bg.png`) existed locally but had never been committed to git, so they were absent from Vercel deployments. Added both files to git and pushed.
+
+**Files Modified:**
+- `public/images/connect-card-bg.png` — added to git (was untracked)
+- `public/images/salvation-card-bg.png` — added to git (was untracked)
+
+**Status:** VERIFIED WORKING
+
+---
+
 ### Session 05 (2026-05-31) — GroupCard layout redesign
 
 **Goal:** Change GroupCard to match EventCard layout; show name, location, and meeting schedule.
@@ -117,22 +131,6 @@ Run `npm test` to verify all 14 unit tests pass.
 **Status:** VERIFIED WORKING (confirmed via browser DOM snapshot)
 
 ---
-
-### Session 02 (2026-05-29) — HeroBanner share button UI polish
-
-**Goal:** Improve the share button and social icons in the hero banner for better tap targets and visual consistency.
-
-**Solution:**
-- Grew share toggle button from `h-8 w-8` → `h-11 w-11`; icon from `size={16}` → `size={22}`
-- Changed share button background from `bg-white/20 backdrop-blur-sm` to solid `bg-white` with `text-ink-800` icon
-- Matched Facebook and X social buttons to same `h-11 w-11` solid white style; SVG icons bumped to `h-5 w-5`
-- Widened slide-out container from `max-w-[92px]` → `max-w-[116px]` to fit larger buttons
-- Bumped `@spiritchurch.co` handle opacity from `text-white/60` → `text-white/90` for legibility
-
-**Files Modified:**
-- `components/home/HeroBanner.tsx` — button sizes, background, icon sizes, handle opacity
-
-**Status:** VERIFIED WORKING
 
 ### Session 03 (2026-05-29) — Time-gated hero banner
 
