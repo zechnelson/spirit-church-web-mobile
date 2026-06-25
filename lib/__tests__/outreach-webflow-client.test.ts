@@ -216,6 +216,19 @@ describe("upsertReferenceItem", () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
+  it("creates items with isDraft: false so they publish on the next site publish", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: "new-id-1" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    await client.upsertReferenceItem("col-id", "Gilbert");
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.isDraft).toBe(false);
+  });
+
   it("throws when POST fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: false,

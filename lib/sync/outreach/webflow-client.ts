@@ -80,7 +80,7 @@ export class OutreachWebflowClient {
       {
         method: "POST",
         headers: this.authHeaders,
-        body: JSON.stringify({ fieldData: { name, slug } }),
+        body: JSON.stringify({ isDraft: false, fieldData: { name, slug } }),
       }
     );
 
