@@ -1,4 +1,4 @@
-import type { RockRawSignUpGroup, OutreachProject } from "./types";
+import type { RockRawSignUpGroup, OutreachProject, RockRawGroupMember } from "./types";
 import { log } from "../utils";
 
 const RMS_BASE_URL = "https://rms.spiritchurch.co";
@@ -45,6 +45,50 @@ export class OutreachRockClient {
     return map;
   }
 
+  private async fetchLeaderMap(
+    groupIds: number[]
+  ): Promise<Map<number, { name: string; imageUrl: string | null }[]>> {
+    if (groupIds.length === 0) return new Map();
+
+    const groupFilter = groupIds.map((id) => `GroupId eq ${id}`).join(" or ");
+    const filter = `(${groupFilter}) and GroupRole/IsLeader eq true`;
+    const query = new URLSearchParams({ $filter: filter, $expand: "Person,GroupRole" });
+
+    const response = await fetch(`${this.apiUrl}/GroupMembers?${query}`, {
+      headers: {
+        "Authorization-Token": this.restKey,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      log(`Warning: Failed to fetch leader map: ${response.status}`);
+      return new Map();
+    }
+
+    const members: RockRawGroupMember[] = await response.json();
+    const map = new Map<number, { name: string; imageUrl: string | null }[]>();
+
+    for (const member of members) {
+      if (!member.Person) continue;
+      const existing = map.get(member.GroupId) ?? [];
+      if (existing.length >= 2) continue;
+
+      const { FirstName, NickName, LastName, Photo } = member.Person;
+      const firstName = NickName?.trim() || FirstName;
+      const name = `${firstName} ${LastName}`;
+      const imageUrl = Photo?.Guid
+        ? `${RMS_BASE_URL}/GetImage.ashx?guid=${Photo.Guid}`
+        : null;
+
+      existing.push({ name, imageUrl });
+      map.set(member.GroupId, existing);
+    }
+
+    return map;
+  }
+
   async fetchSignUpGroups(): Promise<OutreachProject[]> {
     log(`Fetching Sign-Up Groups from Rock (GroupTypeId=${this.groupTypeId})...`);
 
@@ -78,15 +122,16 @@ export class OutreachRockClient {
     const scheduleIds = rawGroups.flatMap((g) =>
       g.GroupLocations?.flatMap((l) => l.Schedules?.map((s) => s.Id) ?? []) ?? []
     );
-    const [groupIdKeys, locationIdKeys, scheduleIdKeys] = await Promise.all([
+    const [groupIdKeys, locationIdKeys, scheduleIdKeys, leaderMap] = await Promise.all([
       this.fetchIdKeyMap("Groups", groupIds),
       this.fetchIdKeyMap("GroupLocations", locationIds),
       this.fetchIdKeyMap("Schedules", scheduleIds),
+      this.fetchLeaderMap(groupIds),
     ]);
 
     const projects: OutreachProject[] = [];
     for (const rawGroup of rawGroups) {
-      const project = this.transformProject(rawGroup, groupIdKeys, locationIdKeys, scheduleIdKeys);
+      const project = this.transformProject(rawGroup, groupIdKeys, locationIdKeys, scheduleIdKeys, leaderMap);
       if (project) {
         projects.push(project);
       } else {
@@ -101,7 +146,8 @@ export class OutreachRockClient {
     rawGroup: RockRawSignUpGroup,
     groupIdKeys?: Map<number, string>,
     locationIdKeys?: Map<number, string>,
-    scheduleIdKeys?: Map<number, string>
+    scheduleIdKeys?: Map<number, string>,
+    leaderMap?: Map<number, { name: string; imageUrl: string | null }[]>
   ): OutreachProject | null {
     const opportunity = rawGroup.GroupLocations?.[0];
 
@@ -153,6 +199,10 @@ export class OutreachRockClient {
       is_active: rawGroup.IsActive,
       is_archived: rawGroup.IsArchived ?? false,
       webflow_item_id: null,
+      leader_name: leaderMap?.get(rawGroup.Id)?.[0]?.name ?? null,
+      leader_name_2: leaderMap?.get(rawGroup.Id)?.[1]?.name ?? null,
+      leader_image: leaderMap?.get(rawGroup.Id)?.[0]?.imageUrl ?? null,
+      leader_image_2: leaderMap?.get(rawGroup.Id)?.[1]?.imageUrl ?? null,
     };
   }
 }

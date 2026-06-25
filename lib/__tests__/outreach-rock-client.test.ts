@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { OutreachRockClient } from "../sync/outreach/rock-client";
 import type { RockRawSignUpGroup } from "../sync/outreach/types";
 
@@ -205,5 +205,163 @@ describe("transformProject", () => {
   it("sets webflow_item_id to null", () => {
     const result = client.transformProject(baseRaw);
     expect(result!.webflow_item_id).toBeNull();
+  });
+});
+
+describe("fetchLeaderMap", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("returns name and imageUrl for both leaders", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([
+        {
+          GroupId: 100,
+          GroupRole: { IsLeader: true },
+          Person: { FirstName: "James", NickName: "JR", LastName: "Martinez", Photo: { Guid: "photo-guid-1" } },
+        },
+        {
+          GroupId: 100,
+          GroupRole: { IsLeader: true },
+          Person: { FirstName: "Pam", NickName: null, LastName: "Martinez", Photo: null },
+        },
+      ]),
+    }));
+
+    const map = await (client as any).fetchLeaderMap([100]);
+    expect(map.get(100)).toEqual([
+      { name: "JR Martinez", imageUrl: "https://rms.spiritchurch.co/GetImage.ashx?guid=photo-guid-1" },
+      { name: "Pam Martinez", imageUrl: null },
+    ]);
+  });
+
+  it("keeps only the first 2 leaders per group", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([
+        { GroupId: 100, GroupRole: { IsLeader: true }, Person: { FirstName: "Alice", NickName: null, LastName: "Smith", Photo: null } },
+        { GroupId: 100, GroupRole: { IsLeader: true }, Person: { FirstName: "Bob", NickName: null, LastName: "Jones", Photo: null } },
+        { GroupId: 100, GroupRole: { IsLeader: true }, Person: { FirstName: "Carol", NickName: null, LastName: "Lee", Photo: null } },
+      ]),
+    }));
+
+    const map = await (client as any).fetchLeaderMap([100]);
+    expect(map.get(100)).toHaveLength(2);
+    expect(map.get(100)[0].name).toBe("Alice Smith");
+    expect(map.get(100)[1].name).toBe("Bob Jones");
+  });
+
+  it("returns empty map on non-ok response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+    }));
+
+    const map = await (client as any).fetchLeaderMap([100]);
+    expect(map.size).toBe(0);
+  });
+
+  it("returns empty map without fetching when groupIds is empty", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    const map = await (client as any).fetchLeaderMap([]);
+    expect(map.size).toBe(0);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("sets imageUrl to null when Photo.Guid is absent", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([
+        { GroupId: 100, GroupRole: { IsLeader: true }, Person: { FirstName: "Alice", NickName: null, LastName: "Smith", Photo: null } },
+      ]),
+    }));
+
+    const map = await (client as any).fetchLeaderMap([100]);
+    expect(map.get(100)![0].imageUrl).toBeNull();
+  });
+
+  it("uses NickName over FirstName when NickName is set", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([
+        { GroupId: 100, GroupRole: { IsLeader: true }, Person: { FirstName: "James", NickName: "JR", LastName: "Martinez", Photo: null } },
+      ]),
+    }));
+
+    const map = await (client as any).fetchLeaderMap([100]);
+    expect(map.get(100)![0].name).toBe("JR Martinez");
+  });
+
+  it("falls back to FirstName when NickName is null", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([
+        { GroupId: 100, GroupRole: { IsLeader: true }, Person: { FirstName: "James", NickName: null, LastName: "Martinez", Photo: null } },
+      ]),
+    }));
+
+    const map = await (client as any).fetchLeaderMap([100]);
+    expect(map.get(100)![0].name).toBe("James Martinez");
+  });
+
+  it("falls back to FirstName when NickName is empty string", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([
+        { GroupId: 100, GroupRole: { IsLeader: true }, Person: { FirstName: "James", NickName: "", LastName: "Martinez", Photo: null } },
+      ]),
+    }));
+
+    const map = await (client as any).fetchLeaderMap([100]);
+    expect(map.get(100)![0].name).toBe("James Martinez");
+  });
+
+  it("skips members with no Person", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([
+        { GroupId: 100, GroupRole: { IsLeader: true }, Person: undefined },
+        { GroupId: 100, GroupRole: { IsLeader: true }, Person: { FirstName: "Alice", NickName: null, LastName: "Smith", Photo: null } },
+      ]),
+    }));
+
+    const map = await (client as any).fetchLeaderMap([100]);
+    expect(map.get(100)).toHaveLength(1);
+    expect(map.get(100)![0].name).toBe("Alice Smith");
+  });
+});
+
+describe("transformProject — leader fields", () => {
+  it("sets all four leader fields from leader map", () => {
+    const leaderMap = new Map([
+      [100, [
+        { name: "JR Martinez", imageUrl: "https://rms.spiritchurch.co/GetImage.ashx?guid=abc" },
+        { name: "Pam Martinez", imageUrl: null },
+      ]],
+    ]);
+    const result = client.transformProject(baseRaw, undefined, undefined, undefined, leaderMap);
+    expect(result!.leader_name).toBe("JR Martinez");
+    expect(result!.leader_name_2).toBe("Pam Martinez");
+    expect(result!.leader_image).toBe("https://rms.spiritchurch.co/GetImage.ashx?guid=abc");
+    expect(result!.leader_image_2).toBeNull();
+  });
+
+  it("sets all four leader fields to null when leader map is absent", () => {
+    const result = client.transformProject(baseRaw);
+    expect(result!.leader_name).toBeNull();
+    expect(result!.leader_name_2).toBeNull();
+    expect(result!.leader_image).toBeNull();
+    expect(result!.leader_image_2).toBeNull();
+  });
+
+  it("sets all four leader fields to null when group has no entry in leader map", () => {
+    const leaderMap = new Map<number, { name: string; imageUrl: string | null }[]>();
+    const result = client.transformProject(baseRaw, undefined, undefined, undefined, leaderMap);
+    expect(result!.leader_name).toBeNull();
+    expect(result!.leader_name_2).toBeNull();
+    expect(result!.leader_image).toBeNull();
+    expect(result!.leader_image_2).toBeNull();
   });
 });

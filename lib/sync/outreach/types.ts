@@ -46,6 +46,19 @@ export interface RockRawSignUpGroup {
   GroupLocations?: RockOpportunityLocation[];
 }
 
+export interface RockRawGroupMember {
+  GroupId: number;
+  Person?: {
+    FirstName: string;
+    NickName?: string | null;
+    LastName: string;
+    Photo?: { Guid?: string | null } | null;
+  };
+  GroupRole?: {
+    IsLeader: boolean;
+  };
+}
+
 export interface OutreachProject {
   rock_group_id: number;
   rock_opportunity_id: number;
@@ -69,6 +82,10 @@ export interface OutreachProject {
   is_active: boolean;
   is_archived: boolean;
   webflow_item_id: string | null;
+  leader_name: string | null;
+  leader_name_2: string | null;
+  leader_image: string | null;
+  leader_image_2: string | null;
 }
 
 export interface WebflowOutreachItem {
