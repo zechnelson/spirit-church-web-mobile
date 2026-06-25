@@ -167,11 +167,10 @@ export class OutreachWebflowClient {
     if (project.project_type) fieldData["project-type"] = project.project_type;
     if (project.signup_url) fieldData["signup-url"] = project.signup_url;
 
-    // Leader fields — slugs confirmed after Webflow CMS fields are created in Task 3
     if (project.leader_name) fieldData["leader-name"] = project.leader_name;
-    if (project.leader_name_2) fieldData["leader-name-2"] = project.leader_name_2;
+    if (project.leader_name_2) fieldData["leader-2-name"] = project.leader_name_2;
     if (project.leader_image) fieldData["leader-profile-image"] = project.leader_image;
-    if (project.leader_image_2) fieldData["leader-profile-image-2"] = project.leader_image_2;
+    if (project.leader_image_2) fieldData["leader-2-profile-image"] = project.leader_image_2;
 
     try {
       if (project.campus && this.campusMap) {

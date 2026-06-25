@@ -395,17 +395,17 @@ describe("transformProjectForWebflow — leader fields", () => {
     };
     const { fieldData } = client.transformProjectForWebflow(project);
     expect(fieldData["leader-name"]).toBe("JR Martinez");
-    expect(fieldData["leader-name-2"]).toBe("Pam Martinez");
+    expect(fieldData["leader-2-name"]).toBe("Pam Martinez");
     expect(fieldData["leader-profile-image"]).toBe("https://rms.spiritchurch.co/GetImage.ashx?guid=abc");
-    expect(fieldData["leader-profile-image-2"]).toBe("https://rms.spiritchurch.co/GetImage.ashx?guid=def");
+    expect(fieldData["leader-2-profile-image"]).toBe("https://rms.spiritchurch.co/GetImage.ashx?guid=def");
   });
 
   it("omits all four leader fields when null", () => {
     const { fieldData } = client.transformProjectForWebflow(baseProject);
     expect(fieldData).not.toHaveProperty("leader-name");
-    expect(fieldData).not.toHaveProperty("leader-name-2");
+    expect(fieldData).not.toHaveProperty("leader-2-name");
     expect(fieldData).not.toHaveProperty("leader-profile-image");
-    expect(fieldData).not.toHaveProperty("leader-profile-image-2");
+    expect(fieldData).not.toHaveProperty("leader-2-profile-image");
   });
 
   it("includes leader name but omits leader image when image is null", () => {
