@@ -27,6 +27,10 @@ const baseProject: OutreachProject = {
   is_active: true,
   is_archived: false,
   webflow_item_id: null,
+  leader_name: null,
+  leader_name_2: null,
+  leader_image: null,
+  leader_image_2: null,
 };
 
 beforeEach(() => {
@@ -377,6 +381,42 @@ describe("deleteItem", () => {
     );
 
     await expect(client.deleteItem("item-999")).rejects.toThrow("404");
+  });
+});
+
+describe("transformProjectForWebflow — leader fields", () => {
+  it("maps all four leader fields when present", () => {
+    const project: OutreachProject = {
+      ...baseProject,
+      leader_name: "JR Martinez",
+      leader_name_2: "Pam Martinez",
+      leader_image: "https://rms.spiritchurch.co/GetImage.ashx?guid=abc",
+      leader_image_2: "https://rms.spiritchurch.co/GetImage.ashx?guid=def",
+    };
+    const { fieldData } = client.transformProjectForWebflow(project);
+    expect(fieldData["leader-name"]).toBe("JR Martinez");
+    expect(fieldData["leader-name-2"]).toBe("Pam Martinez");
+    expect(fieldData["leader-profile-image"]).toBe("https://rms.spiritchurch.co/GetImage.ashx?guid=abc");
+    expect(fieldData["leader-profile-image-2"]).toBe("https://rms.spiritchurch.co/GetImage.ashx?guid=def");
+  });
+
+  it("omits all four leader fields when null", () => {
+    const { fieldData } = client.transformProjectForWebflow(baseProject);
+    expect(fieldData).not.toHaveProperty("leader-name");
+    expect(fieldData).not.toHaveProperty("leader-name-2");
+    expect(fieldData).not.toHaveProperty("leader-profile-image");
+    expect(fieldData).not.toHaveProperty("leader-profile-image-2");
+  });
+
+  it("includes leader name but omits leader image when image is null", () => {
+    const project: OutreachProject = {
+      ...baseProject,
+      leader_name: "JR Martinez",
+      leader_image: null,
+    };
+    const { fieldData } = client.transformProjectForWebflow(project);
+    expect(fieldData["leader-name"]).toBe("JR Martinez");
+    expect(fieldData).not.toHaveProperty("leader-profile-image");
   });
 });
 
