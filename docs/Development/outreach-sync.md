@@ -72,6 +72,10 @@ Note: Campus, Event, Category, City are **MultiRef fields** on `outreach-project
 | `event-2` | MultiRef | project.event → outreach-events collection (auto-upserted) |
 | `category-2` | MultiRef | project.category → outreach-categories collection (auto-upserted) |
 | `city-2` | MultiRef | project.city → outreach-cities collection (auto-upserted) |
+| `leader-name` | PlainText | project.leader_name (1st leader, NickName\|\|FirstName + LastName) |
+| `leader-2-name` | PlainText | project.leader_name_2 (2nd leader) |
+| `leader-profile-image` | PlainText | project.leader_image (Rock photo URL — currently null, see note) |
+| `leader-2-profile-image` | PlainText | project.leader_image_2 (2nd leader photo — currently null) |
 
 ## Environment Variables
 
@@ -127,13 +131,24 @@ All 7 attribute key names in `rock-client.ts` confirmed against live Rock API:
 ## Current Status
 
 - **Code:** Complete and deployed
-- **Tests:** 127/127 passing
+- **Tests:** 143/143 passing
 - **Cron:** Active in `vercel.json` — deployed
-- **Supabase table:** Created and populated (3 rows from latest sync)
-- **Webflow collection:** Live — `outreach-projects` with MultiRef fields for campus-2/event-2/category-2/city-2
+- **Supabase table:** Populated (15 rows from latest sync); 4 leader columns added 2026-06-25
+- **Webflow collection:** Live — `outreach-projects` with MultiRef fields and leader name fields
 - **Reference collections:** Live — 4 collections auto-populated on each sync run (campus, event, category, city)
 - **Vercel env vars:** All added (ROCK_SIGNUP_GROUP_TYPE_ID=37, WEBFLOW_OUTREACH_COLLECTION_ID, CRON_SECRET updated for both sync routes)
-- **Deployment:** Live — full pipeline verified end-to-end 2026-06-19 (MultiRef fields)
+- **Deployment:** Live — full pipeline verified end-to-end 2026-06-25 (leader names)
+- **Leader images:** Always null — Rock returns `PhotoId` (int), not a `Photo.Guid` URL; wire up when Rock exposes it
+
+---
+
+## Rock OData Node Limit (Critical)
+
+Rock RMS's OData API has a **100-node limit** on filter expressions. Each `Id eq X` or `GroupId eq X` term counts as ~3 nodes, `or` connectors count as 1 each. With 20 groups, combining a GroupId OR chain with a navigation property filter (e.g. `and GroupRole/IsLeader eq true`) exceeds the limit and returns 400.
+
+**Rule:** If building a batch filter over many IDs, do NOT combine it with a navigation property condition. Apply that filter client-side in JavaScript after fetching.
+
+`fetchLeaderMap` hits this limit: it fetches all GroupMembers by GroupId in one call and filters `GroupRole.IsLeader` in the loop, not in the OData query.
 
 ---
 
@@ -156,6 +171,37 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 ---
 
 ## Recent Sessions
+
+### Session 06 (2026-06-25) — Feature: Leader names and profile images
+
+**Goal:** Add up to 2 leader names and photo URLs per outreach project, pulled from Rock RMS GroupMembers with a Leader role, synced through Supabase to Webflow CMS.
+
+**Solution:**
+- Added `RockRawGroupMember` interface and 4 new fields to `OutreachProject` (`leader_name`, `leader_name_2`, `leader_image`, `leader_image_2`)
+- Added `fetchLeaderMap(groupIds)` to `OutreachRockClient` — one batch call to `/api/GroupMembers` expanded with Person and GroupRole, filters leaders client-side
+- Wired into `fetchSignUpGroups()` via `Promise.all` alongside existing IdKey batch fetches; result passed into `transformProject()`
+- Added 4 new columns to Supabase `outreach_projects` (TEXT, nullable); upsert spreads them automatically
+- Added 4 PlainText fields to Webflow `outreach-projects` collection; `transformProjectForWebflow` writes them conditionally
+- Name format: `(NickName || FirstName) + " " + LastName`
+
+**Key decisions:**
+- Client-side `IsLeader` filtering required: Rock's OData 100-node limit is exceeded when combining 20+ GroupId OR conditions with `and GroupRole/IsLeader eq true`. Fetch all members by GroupId, filter in JavaScript.
+- Webflow slugs: Webflow assigned `leader-2-name` and `leader-2-profile-image` (not `leader-name-2` / `leader-profile-image-2` as expected) — code matches actual slugs.
+- Leader photos are null: Rock returns `PhotoId` (int) on Person, not `Photo.Guid`. The `RockRawGroupMember` type has `Photo.Guid` typed as future-ready; add a comment noting it's always null until Rock exposes the URL.
+- Supabase schema cache: must reload after adding new columns (`Project Settings → API → Reload schema cache`) before running sync, otherwise PostgREST silently ignores unknown fields in the upsert payload.
+
+**Files Modified:**
+- `lib/sync/outreach/types.ts` — added `RockRawGroupMember`, 4 new fields on `OutreachProject`
+- `lib/sync/outreach/rock-client.ts` — added `fetchLeaderMap`, updated `transformProject` + `fetchSignUpGroups`
+- `lib/sync/outreach/webflow-client.ts` — added 4 leader fields to `transformProjectForWebflow`
+- `lib/__tests__/outreach-rock-client.test.ts` — 13 new tests
+- `lib/__tests__/outreach-webflow-client.test.ts` — 3 new tests, updated `baseProject` fixture
+- `docs/superpowers/specs/2026-06-25-outreach-leader-names-design.md` — design spec
+- `docs/superpowers/plans/2026-06-25-outreach-leader-names.md` — implementation plan
+
+**Status:** Deployed and verified — 143/143 tests passing, leader names live in Webflow
+
+---
 
 ### Session 05 (2026-06-19) — Feature: MultiRef fields for campus/event/category/city filtering
 
