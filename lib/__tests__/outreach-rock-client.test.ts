@@ -331,6 +331,20 @@ describe("fetchLeaderMap", () => {
     expect(map.get(100)).toHaveLength(1);
     expect(map.get(100)![0].name).toBe("Alice Smith");
   });
+
+  it("skips non-leader members (client-side filter)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([
+        { GroupId: 100, GroupRole: { IsLeader: false }, Person: { FirstName: "Non", NickName: null, LastName: "Leader", Photo: null } },
+        { GroupId: 100, GroupRole: { IsLeader: true }, Person: { FirstName: "Alice", NickName: null, LastName: "Smith", Photo: null } },
+      ]),
+    }));
+
+    const map = await (client as any).fetchLeaderMap([100]);
+    expect(map.get(100)).toHaveLength(1);
+    expect(map.get(100)![0].name).toBe("Alice Smith");
+  });
 });
 
 describe("transformProject — leader fields", () => {

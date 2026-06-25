@@ -51,8 +51,9 @@ export class OutreachRockClient {
     if (groupIds.length === 0) return new Map();
 
     const groupFilter = groupIds.map((id) => `GroupId eq ${id}`).join(" or ");
-    const filter = `(${groupFilter}) and GroupRole/IsLeader eq true`;
-    const query = new URLSearchParams({ $filter: filter, $expand: "Person,GroupRole" });
+    // Rock's OData node limit (~100) is exceeded when combining a large GroupId OR chain with
+    // GroupRole/IsLeader eq true — filter leaders client-side instead.
+    const query = new URLSearchParams({ $filter: `(${groupFilter})`, $expand: "Person,GroupRole" });
 
     const response = await fetch(`${this.apiUrl}/GroupMembers?${query}`, {
       headers: {
@@ -71,6 +72,7 @@ export class OutreachRockClient {
     const map = new Map<number, { name: string; imageUrl: string | null }[]>();
 
     for (const member of members) {
+      if (!member.GroupRole?.IsLeader) continue;
       if (!member.Person) continue;
       const existing = map.get(member.GroupId) ?? [];
       if (existing.length >= 2) continue;
