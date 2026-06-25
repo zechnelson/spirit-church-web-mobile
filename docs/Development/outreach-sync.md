@@ -131,7 +131,7 @@ All 7 attribute key names in `rock-client.ts` confirmed against live Rock API:
 ## Current Status
 
 - **Code:** Complete and deployed
-- **Tests:** 143/143 passing
+- **Tests:** 144/144 passing
 - **Cron:** Active in `vercel.json` — deployed
 - **Supabase table:** Populated (15 rows from latest sync); 4 leader columns added 2026-06-25
 - **Webflow collection:** Live — `outreach-projects` with MultiRef fields and leader name fields
@@ -171,6 +171,25 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 ---
 
 ## Recent Sessions
+
+### Session 07 (2026-06-25) — Fix: Reference collection items saved as draft
+
+**Goal/Problem:** Categories, cities, and other reference collection values created by the sync were `isDraft: true` in Webflow, making them invisible on the live site for filtering.
+
+**Root cause:** `upsertReferenceItem` posted `{ fieldData: { name, slug } }` without setting `isDraft: false`. Webflow defaults new items to draft. The `publishSite` call in Stage 3 rebuilds the site with already-published content — it does not flip draft items to published.
+
+**Solution:**
+- Added `isDraft: false` to the POST body in `upsertReferenceItem` — new reference items are created in published state from the start
+- Manually published all existing draft items via Webflow MCP `publish_collection_items` (5 categories + 3 cities that were stuck as drafts)
+- Corrected the Session 05 note: `publishItems` does work on reference collections (the earlier 404 was likely a different issue); it's just not needed anymore since items are now created as `isDraft: false`
+
+**Files Modified:**
+- `lib/sync/outreach/webflow-client.ts` — added `isDraft: false` to `upsertReferenceItem` POST body
+- `lib/__tests__/outreach-webflow-client.test.ts` — new test verifying `isDraft: false` is sent
+
+**Status:** Deployed and verified — 144/144 tests passing, all reference items published in Webflow
+
+---
 
 ### Session 06 (2026-06-25) — Feature: Leader names and profile images
 
@@ -216,7 +235,7 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 
 **Key decisions:**
 - `initializeReferenceMaps` uses sequential awaits (not `Promise.all`) — required by test mock design; works correctly with Webflow API
-- Reference collection items remain `isDraft: true` — Webflow's `publishItems` endpoint returns 404 for reference-only collections (no CMS pages). This is expected: items are accessible via API regardless of draft state, and `publishSite` in Stage 3 covers the rebuild.
+- Reference collection items were initially left as `isDraft: true` with the assumption that `publishSite` would cover them — this was wrong. Fixed in Session 07: items are now created with `isDraft: false`.
 - Empty slug fallback: if name produces empty string from slug regex, falls back to `ref-${Date.now()}`
 - Field slug suffix `-2` is permanent (Webflow behavior after recent same-name deletion); front-end bindings must use `campus-2` etc.
 - Filter `v != null` (loose equality) used in `initializeReferenceMaps` to catch both null and undefined values from Supabase
@@ -243,56 +262,6 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 - `lib/__tests__/outreach-webflow-client.test.ts` — updated `baseProject` fixture and assertion
 
 **Status:** VERIFIED WORKING — 107/107 tests passing
-
----
-
-### Session 01 (2026-06-09) — Implementation
-
-**Goal:** Build full Rock RMS → Supabase → Webflow sync pipeline for Outreach Projects (Sign-Up Groups).
-
-**Solution:** Implemented all 6 code tasks (types, rock-client, supabase-client, webflow-client, orchestrator, route handler) with TDD. 112/112 tests passing. Added cron entry to `vercel.json`. Supabase table created. Blocked on Webflow collection setup and Vercel env vars before deploying.
-
-**Key decisions:**
-- Flat Supabase schema (one row per opportunity, not normalized) — appropriate for 1:1 group:opportunity starting state
-- `existingMap` keyed by `rock-opportunity-id` (not `rock-id`) since each Webflow item represents an opportunity
-- Boolean fields (kids_welcome, handicap_accessible) stored as Webflow Switch, not Ref
-- Sign-up URL is null if any IdKey is missing from Rock API response (graceful fallback)
-- Rock attribute key names are guesses — must verify via diagnostic curl before first sync
-
-**Files created:**
-- `lib/sync/outreach/types.ts`, `rock-client.ts`, `supabase-client.ts`, `webflow-client.ts`, `index.ts`
-- `app/api/sync-outreach/route.ts`
-- `lib/__tests__/outreach-rock-client.test.ts`, `outreach-webflow-client.test.ts`, `outreach-sync-route.test.ts`
-
-**Files modified:**
-- `vercel.json` — added `/api/sync-outreach` cron entry
-
-**Next session — Task 0 remaining steps:**
-1. ~~Create Webflow collection~~ ✓ Done 2026-06-11 (`outreach-projects` with all 16 fields)
-2. Update `webflow-client.ts` — remove ref collection lookups, write campus/event/category/city as PlainText strings directly
-3. Update tests in `outreach-webflow-client.test.ts` to match new field behavior
-4. Add 2 env vars to Vercel: `ROCK_SIGNUP_GROUP_TYPE_ID` + `WEBFLOW_OUTREACH_COLLECTION_ID` (`6a28cbac65cb0f0593f53802`)
-5. Pull env locally: `vercel env pull --environment production .env.local`
-6. Verify Rock attribute key names via diagnostic curl
-7. Deploy: `vercel build --prod && vercel deploy --prebuilt --prod`
-8. Trigger manual sync and verify end-to-end
-
----
-
-### Session 02 (2026-06-11) — Webflow Collection
-
-**Goal:** Create Webflow CMS collection for Outreach Sync pipeline (Task 0, Step 1).
-
-**What happened:** Initially created collections on wrong site (Spirit Church Staging `68bf98e2590d4a39fb6f9bb8`). Correct site is `68ae1c452c9ac726c7a745ee`. After reconnecting Webflow MCP, hit the 20-collection CMS plan limit — couldn't create 4 reference collections. Changed architecture: campus/event/category/city are now PlainText fields on `outreach-projects` instead of Reference fields.
-
-**Solution:** Added all 16 fields to existing `outreach-projects` collection (`6a28cbac65cb0f0593f53802`) on correct site. Field slugs all match the schema.
-
-**Key decisions:**
-- campus/event/category/city changed from Ref to PlainText — Spirit Church site is at 20-collection CMS plan limit
-- Eliminates campusMap/eventMap/categoryMap/cityMap lookups in webflow-client.ts — simpler sync, string values written directly
-- Wrong-site collections (on `68bf98e2590d4a39fb6f9bb8`) must be manually deleted in Webflow Designer
-
-**Next:** Update `webflow-client.ts` to remove ref lookups, update tests, then add env vars.
 
 ---
 
