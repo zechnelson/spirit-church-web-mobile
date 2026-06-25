@@ -52,7 +52,7 @@ export interface RockRawGroupMember {
     FirstName: string;
     NickName?: string | null;
     LastName: string;
-    Photo?: { Guid?: string | null } | null;
+    Photo?: { Guid?: string | null } | null; // Rock currently returns PhotoId (int), not Photo.Guid — always null until Rock exposes it
   };
   GroupRole?: {
     IsLeader: boolean;
