@@ -172,6 +172,27 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 
 ## Recent Sessions
 
+### Session 08 (2026-06-25) — Fix: Sign-up URLs using wrong location IdKey
+
+**Goal/Problem:** All sign-up URLs in Webflow produced "project occurrence not found" in Rock RMS when clicked.
+
+**Root cause:** Rock's sign-up URL format is `/signups/register/{groupIdKey}/location/{locationIdKey}/schedule/{scheduleIdKey}`. The `location` segment expects the **`Location` entity's IdKey** (the actual address entity), not the **`GroupLocation` entity's IdKey** (the join table between Group and Location). These are two different Rock entities with different IdKeys. The batch fetch was hitting `GroupLocations?$filter=Id eq ...` and using `GroupLocation.IdKey`, but Rock needed `Location.IdKey`.
+
+**Solution:**
+- Added `Id` and `IdKey` to the `Location` interface in `types.ts`
+- Changed batch fetch endpoint from `GroupLocations` to `Locations`, using `Location?.Id` to collect IDs
+- Updated `transformProject` to use `opportunity.Location?.IdKey` (with batch map fallback via `Location.Id`)
+- Added a new test verifying the batch fallback path for location IdKey
+
+**Files Modified:**
+- `lib/sync/outreach/types.ts` — added `Id` and `IdKey` to `Location` interface
+- `lib/sync/outreach/rock-client.ts` — batch fetch uses `Locations` endpoint; transform uses `Location.IdKey`
+- `lib/__tests__/outreach-rock-client.test.ts` — updated fixture, signup_url assertion, null-IdKey test, added batch fallback test
+
+**Status:** Deployed and verified — 145/145 tests passing, all 15 sign-up URLs corrected and confirmed working
+
+---
+
 ### Session 07 (2026-06-25) — Fix: Reference collection items saved as draft
 
 **Goal/Problem:** Categories, cities, and other reference collection values created by the sync were `isDraft: true` in Webflow, making them invisible on the live site for filtering.
