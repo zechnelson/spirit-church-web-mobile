@@ -31,6 +31,8 @@ const baseRaw: RockRawSignUpGroup = {
       Id: 200,
       IdKey: "loc456",
       Location: {
+        Id: 201,
+        IdKey: "locEntity456",
         Street1: "1100 W Grove Pkwy Ste 101",
         City: "Tempe",
         State: "AZ",
@@ -66,7 +68,7 @@ describe("transformProject", () => {
   it("constructs signup_url from IdKeys", () => {
     const result = client.transformProject(baseRaw);
     expect(result!.signup_url).toBe(
-      "https://rms.spiritchurch.co/signups/register/abc123/location/loc456/schedule/sch789"
+      "https://rms.spiritchurch.co/signups/register/abc123/location/locEntity456/schedule/sch789"
     );
   });
 
@@ -79,10 +81,28 @@ describe("transformProject", () => {
   it("returns null signup_url when location IdKey is missing", () => {
     const raw: RockRawSignUpGroup = {
       ...baseRaw,
-      GroupLocations: [{ ...baseRaw.GroupLocations![0], IdKey: undefined }],
+      GroupLocations: [{
+        ...baseRaw.GroupLocations![0],
+        Location: { ...baseRaw.GroupLocations![0].Location!, IdKey: undefined },
+      }],
     };
     const result = client.transformProject(raw);
     expect(result!.signup_url).toBeNull();
+  });
+
+  it("falls back to locationIdKeys map when Location.IdKey is absent", () => {
+    const raw: RockRawSignUpGroup = {
+      ...baseRaw,
+      GroupLocations: [{
+        ...baseRaw.GroupLocations![0],
+        Location: { ...baseRaw.GroupLocations![0].Location!, IdKey: undefined },
+      }],
+    };
+    const locationIdKeys = new Map([[201, "mapLocKey"]]);
+    const result = client.transformProject(raw, undefined, locationIdKeys);
+    expect(result!.signup_url).toBe(
+      "https://rms.spiritchurch.co/signups/register/abc123/location/mapLocKey/schedule/sch789"
+    );
   });
 
   it("returns null signup_url when schedule IdKey is missing", () => {

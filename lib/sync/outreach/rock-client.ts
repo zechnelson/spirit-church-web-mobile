@@ -120,13 +120,15 @@ export class OutreachRockClient {
 
     // Rock strips IdKey from OData list responses — batch-fetch them separately
     const groupIds = rawGroups.map((g) => g.Id);
-    const locationIds = rawGroups.flatMap((g) => g.GroupLocations?.map((l) => l.Id) ?? []);
+    const locationIds = rawGroups
+      .flatMap((g) => g.GroupLocations?.map((l) => l.Location?.Id) ?? [])
+      .filter((id): id is number => id != null);
     const scheduleIds = rawGroups.flatMap((g) =>
       g.GroupLocations?.flatMap((l) => l.Schedules?.map((s) => s.Id) ?? []) ?? []
     );
     const [groupIdKeys, locationIdKeys, scheduleIdKeys, leaderMap] = await Promise.all([
       this.fetchIdKeyMap("Groups", groupIds),
-      this.fetchIdKeyMap("GroupLocations", locationIds),
+      this.fetchIdKeyMap("Locations", locationIds),
       this.fetchIdKeyMap("Schedules", scheduleIds),
       this.fetchLeaderMap(groupIds),
     ]);
@@ -160,7 +162,10 @@ export class OutreachRockClient {
     const schedule = opportunity.Schedules?.[0] ?? null;
 
     const groupIdKey = rawGroup.IdKey ?? groupIdKeys?.get(rawGroup.Id) ?? null;
-    const locationIdKey = opportunity.IdKey ?? locationIdKeys?.get(opportunity.Id) ?? null;
+    const locationId = opportunity.Location?.Id;
+    const locationIdKey =
+      opportunity.Location?.IdKey ??
+      (locationId != null ? locationIdKeys?.get(locationId) ?? null : null);
     const scheduleIdKey = schedule
       ? (schedule.IdKey ?? scheduleIdKeys?.get(schedule.Id) ?? null)
       : null;

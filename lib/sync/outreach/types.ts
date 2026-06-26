@@ -15,6 +15,8 @@ export interface RockOpportunityLocation {
   Id: number;
   IdKey?: string;
   Location?: {
+    Id?: number;
+    IdKey?: string;
     Street1?: string;
     City?: string;
     State?: string;
