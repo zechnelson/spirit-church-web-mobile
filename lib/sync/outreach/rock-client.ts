@@ -21,27 +21,35 @@ export class OutreachRockClient {
   ): Promise<Map<number, string>> {
     if (ids.length === 0) return new Map();
 
-    const filter = ids.map((id) => `Id eq ${id}`).join(" or ");
-    const query = new URLSearchParams({ $filter: filter });
-
-    const response = await fetch(`${this.apiUrl}/${endpoint}?${query}`, {
-      headers: {
-        "Authorization-Token": this.restKey,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      log(`Warning: Failed to fetch IdKey map for ${endpoint}: ${response.status}`);
-      return new Map();
-    }
-
-    const items: { Id: number; IdKey?: string | null }[] = await response.json();
+    // Rock's OData node limit (~100) is hit when the ID list grows large.
+    // Chunk into batches of 15 to stay safely under the limit.
+    const CHUNK_SIZE = 15;
     const map = new Map<number, string>();
-    for (const item of items) {
-      if (item.IdKey) map.set(item.Id, item.IdKey);
+
+    for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+      const chunk = ids.slice(i, i + CHUNK_SIZE);
+      const filter = chunk.map((id) => `Id eq ${id}`).join(" or ");
+      const query = new URLSearchParams({ $filter: filter });
+
+      const response = await fetch(`${this.apiUrl}/${endpoint}?${query}`, {
+        headers: {
+          "Authorization-Token": this.restKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        log(`Warning: Failed to fetch IdKey map for ${endpoint}: ${response.status}`);
+        continue;
+      }
+
+      const items: { Id: number; IdKey?: string | null }[] = await response.json();
+      for (const item of items) {
+        if (item.IdKey) map.set(item.Id, item.IdKey);
+      }
     }
+
     return map;
   }
 
@@ -50,42 +58,48 @@ export class OutreachRockClient {
   ): Promise<Map<number, { name: string; imageUrl: string | null }[]>> {
     if (groupIds.length === 0) return new Map();
 
-    const groupFilter = groupIds.map((id) => `GroupId eq ${id}`).join(" or ");
-    // Rock's OData node limit (~100) is exceeded when combining a large GroupId OR chain with
-    // GroupRole/IsLeader eq true — filter leaders client-side instead.
-    const query = new URLSearchParams({ $filter: `(${groupFilter})`, $expand: "Person,GroupRole" });
-
-    const response = await fetch(`${this.apiUrl}/GroupMembers?${query}`, {
-      headers: {
-        "Authorization-Token": this.restKey,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      log(`Warning: Failed to fetch leader map: ${response.status}`);
-      return new Map();
-    }
-
-    const members: RockRawGroupMember[] = await response.json();
+    // Chunk to avoid Rock's OData node limit (~100). Filter IsLeader client-side
+    // because combining a large GroupId OR chain with a navigation property filter
+    // (GroupRole/IsLeader eq true) also exceeds the limit.
+    const CHUNK_SIZE = 15;
     const map = new Map<number, { name: string; imageUrl: string | null }[]>();
 
-    for (const member of members) {
-      if (!member.GroupRole?.IsLeader) continue;
-      if (!member.Person) continue;
-      const existing = map.get(member.GroupId) ?? [];
-      if (existing.length >= 2) continue;
+    for (let i = 0; i < groupIds.length; i += CHUNK_SIZE) {
+      const chunk = groupIds.slice(i, i + CHUNK_SIZE);
+      const groupFilter = chunk.map((id) => `GroupId eq ${id}`).join(" or ");
+      const query = new URLSearchParams({ $filter: `(${groupFilter})`, $expand: "Person,GroupRole" });
 
-      const { FirstName, NickName, LastName, Photo } = member.Person;
-      const firstName = NickName?.trim() || FirstName;
-      const name = `${firstName} ${LastName}`;
-      const imageUrl = Photo?.Guid
-        ? `${RMS_BASE_URL}/GetImage.ashx?guid=${Photo.Guid}`
-        : null;
+      const response = await fetch(`${this.apiUrl}/GroupMembers?${query}`, {
+        headers: {
+          "Authorization-Token": this.restKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
 
-      existing.push({ name, imageUrl });
-      map.set(member.GroupId, existing);
+      if (!response.ok) {
+        log(`Warning: Failed to fetch leader map chunk: ${response.status}`);
+        continue;
+      }
+
+      const members: RockRawGroupMember[] = await response.json();
+
+      for (const member of members) {
+        if (!member.GroupRole?.IsLeader) continue;
+        if (!member.Person) continue;
+        const existing = map.get(member.GroupId) ?? [];
+        if (existing.length >= 2) continue;
+
+        const { FirstName, NickName, LastName, Photo } = member.Person;
+        const firstName = NickName?.trim() || FirstName;
+        const name = `${firstName} ${LastName}`;
+        const imageUrl = Photo?.Guid
+          ? `${RMS_BASE_URL}/GetImage.ashx?guid=${Photo.Guid}`
+          : null;
+
+        existing.push({ name, imageUrl });
+        map.set(member.GroupId, existing);
+      }
     }
 
     return map;

@@ -349,11 +349,11 @@ export class OutreachWebflowClient {
       },
     });
 
-    let customDomains: string[] = [];
+    let customDomainIds: string[] = [];
     if (siteResponse.ok) {
       const siteData = await siteResponse.json();
-      customDomains =
-        siteData.customDomains?.map((d: { url: string }) => d.url) ?? [];
+      customDomainIds =
+        siteData.customDomains?.map((d: { id: string }) => d.id) ?? [];
     }
 
     const response = await fetch(
@@ -361,7 +361,7 @@ export class OutreachWebflowClient {
       {
         method: "POST",
         headers: this.authHeaders,
-        body: JSON.stringify({ customDomains }),
+        body: JSON.stringify({ customDomainIds }),
       }
     );
 
