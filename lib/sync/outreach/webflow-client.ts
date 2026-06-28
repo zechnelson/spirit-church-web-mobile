@@ -349,10 +349,11 @@ export class OutreachWebflowClient {
       },
     });
 
-    let customDomainIds: string[] = [];
+    let customDomains: string[] = [];
     if (siteResponse.ok) {
       const siteData = await siteResponse.json();
-      customDomainIds =
+      // Webflow v2 publish expects customDomains as an array of domain IDs, not URLs
+      customDomains =
         siteData.customDomains?.map((d: { id: string }) => d.id) ?? [];
     }
 
@@ -361,7 +362,7 @@ export class OutreachWebflowClient {
       {
         method: "POST",
         headers: this.authHeaders,
-        body: JSON.stringify({ customDomainIds }),
+        body: JSON.stringify({ customDomains }),
       }
     );
 
