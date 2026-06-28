@@ -172,6 +172,27 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 
 ## Recent Sessions
 
+### Session 09 (2026-06-27) — Fix: OData node limit on IdKey batch fetches + publishSite domain bug
+
+**Goal/Problem:** Sign-up URLs were null for all projects after group count grew from 15 → 22. publishSite was also silently failing on every sync run.
+
+**Root causes:**
+1. `fetchIdKeyMap` and `fetchLeaderMap` sent all group IDs in a single OData filter. At 22 IDs the filter hit Rock's ~100-node limit and returned 400 → empty IdKey maps → every `groupIdKey` null → every sign-up URL null.
+2. `publishSite` mapped `customDomains` to `.url` strings but Webflow v2 `POST /sites/{id}/publish` expects `customDomains` as an array of domain **IDs** (not URLs). Was silently failing since launch.
+
+**Solution:**
+- Chunked `fetchIdKeyMap` to 15 IDs per request (15 × 3 nodes + 14 ors = 59 nodes, safely under limit)
+- Chunked `fetchLeaderMap` the same way; merged results across chunks
+- In `publishSite`, changed `.url` → `.id` in the `customDomains` map (kept field name `customDomains`, which is what Webflow v2 expects)
+
+**Files Modified:**
+- `lib/sync/outreach/rock-client.ts` — chunked `fetchIdKeyMap` and `fetchLeaderMap`
+- `lib/sync/outreach/webflow-client.ts` — map `d.id` instead of `d.url` in `publishSite`
+
+**Status:** Deployed and verified — 145/145 tests passing, sync log shows no warnings, `Site published` line confirmed, Webflow site live
+
+---
+
 ### Session 08 (2026-06-25) — Fix: Sign-up URLs using wrong location IdKey
 
 **Goal/Problem:** All sign-up URLs in Webflow produced "project occurrence not found" in Rock RMS when clicked.
@@ -271,16 +292,4 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 
 ---
 
-### Session 04 (2026-06-18) — Change: Use Rock opportunity ID as Webflow slug
-
-**Goal:** Replace name-based slug generation with the opportunity's Rock ID so slugs are stable and don't change when a project is renamed.
-
-**Solution:** Changed `slug: slugify(rawGroup.Name)` → `slug: String(opportunity.Id)` in `transformProject`, using the GroupLocation ID (`rock_opportunity_id`) since each Webflow item represents one opportunity. Removed the now-unused `slugify` import. Updated tests to expect `"200"`.
-
-**Files Modified:**
-- `lib/sync/outreach/rock-client.ts` — slug now uses `String(opportunity.Id)`; removed `slugify` import
-- `lib/__tests__/outreach-rock-client.test.ts` — updated slug assertion
-- `lib/__tests__/outreach-webflow-client.test.ts` — updated `baseProject` fixture and assertion
-
-**Status:** VERIFIED WORKING — 107/107 tests passing
 
