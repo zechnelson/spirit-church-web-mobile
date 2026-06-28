@@ -131,14 +131,15 @@ All 7 attribute key names in `rock-client.ts` confirmed against live Rock API:
 ## Current Status
 
 - **Code:** Complete and deployed
-- **Tests:** 144/144 passing
+- **Tests:** 145/145 passing
 - **Cron:** Active in `vercel.json` — deployed
-- **Supabase table:** Populated (15 rows from latest sync); 4 leader columns added 2026-06-25
+- **Supabase table:** Populated (17 rows from latest sync); 4 leader columns added 2026-06-25
 - **Webflow collection:** Live — `outreach-projects` with MultiRef fields and leader name fields
 - **Reference collections:** Live — 4 collections auto-populated on each sync run (campus, event, category, city)
 - **Vercel env vars:** All added (ROCK_SIGNUP_GROUP_TYPE_ID=37, WEBFLOW_OUTREACH_COLLECTION_ID, CRON_SECRET updated for both sync routes)
-- **Deployment:** Live — full pipeline verified end-to-end 2026-06-25 (leader names)
+- **Deployment:** Live — last deployed 2026-06-28 (OData limit + publishSite fixes)
 - **Leader images:** Always null — Rock returns `PhotoId` (int), not a `Photo.Guid` URL; wire up when Rock exposes it
+- **Available spots:** Planned — spec at `docs/superpowers/specs/2026-06-27-outreach-available-spots-design.md`, implementation plan at `docs/superpowers/plans/2026-06-28-outreach-available-spots.md`
 
 ---
 
@@ -146,9 +147,9 @@ All 7 attribute key names in `rock-client.ts` confirmed against live Rock API:
 
 Rock RMS's OData API has a **100-node limit** on filter expressions. Each `Id eq X` or `GroupId eq X` term counts as ~3 nodes, `or` connectors count as 1 each. With 20 groups, combining a GroupId OR chain with a navigation property filter (e.g. `and GroupRole/IsLeader eq true`) exceeds the limit and returns 400.
 
-**Rule:** If building a batch filter over many IDs, do NOT combine it with a navigation property condition. Apply that filter client-side in JavaScript after fetching.
+**Rule:** If building a batch filter over many IDs, do NOT combine it with a navigation property condition. Apply that filter client-side in JavaScript after fetching. Chunk all batch ID filters at 15 IDs per request.
 
-`fetchLeaderMap` hits this limit: it fetches all GroupMembers by GroupId in one call and filters `GroupRole.IsLeader` in the loop, not in the OData query.
+`fetchIdKeyMap`, `fetchLeaderMap`, and `fetchAssignmentCountMap` all chunk at 15 IDs. `fetchLeaderMap` additionally filters `GroupRole.IsLeader` client-side (not in OData) because combining a large GroupId OR chain with a navigation property condition also exceeds the limit.
 
 ---
 
@@ -171,6 +172,30 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 ---
 
 ## Recent Sessions
+
+### Session 10 (2026-06-28) — Planning: Available spots and is_full fields
+
+**Goal:** Research and design syncing available spot count and a full indicator for each outreach project from Rock RMS.
+
+**Research findings:**
+- `GroupLocationScheduleConfigs` (added to the existing Groups `$expand`) provides `MaximumCapacity` per GroupLocation+Schedule — always set for active Spirit Church projects
+- `GroupMemberAssignments` endpoint supports batch `GroupId` filtering with `$select=GroupId,LocationId,ScheduleId` — same chunked pattern as other batch fetches
+- Available spots = `MaximumCapacity − count(assignments for groupId|locationId|scheduleId)` at sync time
+- New fields: `spots_available` (int, nullable) and `is_full` (bool)
+
+**Decisions:**
+- Display as a number, not live-updated — 6-hour cron snapshot is acceptable
+- `is_full` boolean flag (rather than showing "0") so the frontend can render a "Full" label
+- Over-subscribed clamp: if filled > max, `spots_available = 0` and `is_full = true`
+- Graceful degradation: if assignment fetch fails, sync continues with `spots_available = null`, `is_full = false`
+
+**Artifacts:**
+- Design spec: `docs/superpowers/specs/2026-06-27-outreach-available-spots-design.md`
+- Implementation plan: `docs/superpowers/plans/2026-06-28-outreach-available-spots.md`
+
+**Status:** Planning complete — no code written yet, implementation plan ready to execute
+
+---
 
 ### Session 09 (2026-06-27) — Fix: OData node limit on IdKey batch fetches + publishSite domain bug
 
@@ -264,32 +289,5 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 
 ---
 
-### Session 05 (2026-06-19) — Feature: MultiRef fields for campus/event/category/city filtering
-
-**Goal:** Replace PlainText campus/event/category/city fields with MultiRef fields to enable proper Webflow CMS filtering on the public outreach page.
-
-**Solution:**
-- Created 4 new Webflow reference collections (outreach-campuses, outreach-events, outreach-categories, outreach-cities)
-- Deleted 4 PlainText fields from outreach-projects; added 4 MultiRef fields (Webflow auto-assigned `-2` suffix to field slugs: `campus-2`, `event-2`, `category-2`, `city-2`)
-- Added `fetchReferenceCollection`, `mapValuesToIds`, `upsertReferenceItem`, `syncReferenceCollection`, `initializeReferenceMaps` to `OutreachWebflowClient`
-- Each sync run auto-upserts missing values into the reference collections; `publishSite` in Stage 3 covers the site rebuild
-- Added `initializeReferenceMaps(supabaseProjects)` call in `index.ts` before Stage 2
-
-**Key decisions:**
-- `initializeReferenceMaps` uses sequential awaits (not `Promise.all`) — required by test mock design; works correctly with Webflow API
-- Reference collection items were initially left as `isDraft: true` with the assumption that `publishSite` would cover them — this was wrong. Fixed in Session 07: items are now created with `isDraft: false`.
-- Empty slug fallback: if name produces empty string from slug regex, falls back to `ref-${Date.now()}`
-- Field slug suffix `-2` is permanent (Webflow behavior after recent same-name deletion); front-end bindings must use `campus-2` etc.
-- Filter `v != null` (loose equality) used in `initializeReferenceMaps` to catch both null and undefined values from Supabase
-
-**Files Modified:**
-- `lib/sync/outreach/webflow-client.ts` — new reference collection methods, updated transform
-- `lib/sync/outreach/index.ts` — added initializeReferenceMaps call
-- `lib/__tests__/outreach-webflow-client.test.ts` — updated and expanded tests
-- `docs/Development/outreach-sync.md` — updated collection table and field schema
-
-**Status:** Deployed and verified — 127/127 tests passing
-
----
 
 
