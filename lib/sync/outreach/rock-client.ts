@@ -109,7 +109,7 @@ export class OutreachRockClient {
     log(`Fetching Sign-Up Groups from Rock (GroupTypeId=${this.groupTypeId})...`);
 
     const query = new URLSearchParams({
-      $filter: `GroupTypeId eq ${this.groupTypeId}`,
+      $filter: `GroupTypeId eq ${this.groupTypeId} and IsActive eq true`,
       $expand: "Campus,GroupLocations,GroupLocations/Location,GroupLocations/Schedules",
       loadAttributes: "simple",
     });

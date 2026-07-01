@@ -52,8 +52,26 @@ export async function fullOutreachSync(
     log("--- Outreach Stage 2: Supabase → Webflow ---");
     const supabaseProjects = await supabase.getAllProjects();
 
+    // Reconcile against Rock: delete Supabase rows for groups no longer returned by Rock.
+    // Rock excludes deleted/archived groups from its API response entirely, so they never
+    // appear in rockProjects and the is_archived deletion path above never fires for them.
+    const rockGroupIdSet = new Set(rockProjects.map((p) => p.rock_group_id));
+    const orphanedSupabaseProjects = supabaseProjects.filter(
+      (p) => !rockGroupIdSet.has(p.rock_group_id)
+    );
+    if (orphanedSupabaseProjects.length > 0) {
+      log(
+        `Deleting ${orphanedSupabaseProjects.length} orphaned outreach projects from Supabase (no longer in Rock): ` +
+          orphanedSupabaseProjects.map((p) => `${p.name} (group ${p.rock_group_id})`).join(", ")
+      );
+      await supabase.deleteProjects(orphanedSupabaseProjects.map((p) => p.rock_group_id));
+    }
+    const activeSupabaseProjects = supabaseProjects.filter(
+      (p) => rockGroupIdSet.has(p.rock_group_id)
+    );
+
     // Auto-upsert any new campus/event/category/city values into reference collections
-    await webflow.initializeReferenceMaps(supabaseProjects);
+    await webflow.initializeReferenceMaps(activeSupabaseProjects);
 
     const existingItems = await webflow.getExistingItems();
 
@@ -64,15 +82,31 @@ export async function fullOutreachSync(
       ])
     );
 
-    const toCreate = supabaseProjects.filter(
+    // Webflow items whose rock-opportunity-id is no longer in Supabase are orphaned.
+    // This covers both groups deleted from Rock entirely and groups archived in Rock
+    // (which were already removed from Supabase in Stage 1).
+    const supabaseOpportunityIds = new Set(
+      activeSupabaseProjects.map((p) => p.rock_opportunity_id)
+    );
+    const orphanedWebflowIds = existingItems
+      .filter(
+        (item) =>
+          !supabaseOpportunityIds.has(
+            item.fieldData["rock-opportunity-id"] as number
+          )
+      )
+      .map((item) => item.id)
+      .filter((id): id is string => id !== undefined);
+
+    const toCreate = activeSupabaseProjects.filter(
       (p) => !existingMap.has(p.rock_opportunity_id)
     );
-    const toUpdate = supabaseProjects
+    const toUpdate = activeSupabaseProjects
       .filter((p) => existingMap.has(p.rock_opportunity_id))
       .map((p) => ({ item: existingMap.get(p.rock_opportunity_id)!, project: p }));
 
     log(
-      `${toCreate.length} to create, ${toUpdate.length} to update, ${toDelete.length} to delete from Webflow`
+      `${toCreate.length} to create, ${toUpdate.length} to update, ${toDelete.length} archived + ${orphanedWebflowIds.length} orphaned to delete from Webflow`
     );
 
     const { created, itemIds: createdIds } = await webflow.createItems(toCreate);
@@ -99,7 +133,10 @@ export async function fullOutreachSync(
     const toDeleteWebflowIds = toDelete
       .map((p) => existingMap.get(p.rock_opportunity_id)?.id)
       .filter((id): id is string => id !== undefined);
-    const deleted = await webflow.deleteItems(toDeleteWebflowIds);
+    const allDeleteWebflowIds = [
+      ...new Set([...toDeleteWebflowIds, ...orphanedWebflowIds]),
+    ];
+    const deleted = await webflow.deleteItems(allDeleteWebflowIds);
 
     // Stage 3: Publish
     log("--- Outreach Stage 3: Publish ---");
@@ -119,7 +156,7 @@ export async function fullOutreachSync(
     }
 
     await supabase.logSync("outreach_supabase_to_webflow", "success", {
-      processed: supabaseProjects.length,
+      processed: activeSupabaseProjects.length,
       created,
       updated,
       startedAt,
@@ -132,7 +169,7 @@ export async function fullOutreachSync(
       startedAt,
       rockToSupabase: { processed: activeProjects.length, status: "success" },
       supabaseToWebflow: {
-        processed: supabaseProjects.length,
+        processed: activeSupabaseProjects.length,
         created,
         updated,
         deleted,

@@ -133,11 +133,13 @@ All 7 attribute key names in `rock-client.ts` confirmed against live Rock API:
 - **Code:** Complete and deployed
 - **Tests:** 145/145 passing
 - **Cron:** Active in `vercel.json` — deployed
-- **Supabase table:** Populated (17 rows from latest sync); 4 leader columns added 2026-06-25
+- **Supabase table:** Populated (16 rows from latest sync); 4 leader columns added 2026-06-25
 - **Webflow collection:** Live — `outreach-projects` with MultiRef fields and leader name fields
 - **Reference collections:** Live — 4 collections auto-populated on each sync run (campus, event, category, city)
 - **Vercel env vars:** All added (ROCK_SIGNUP_GROUP_TYPE_ID=37, WEBFLOW_OUTREACH_COLLECTION_ID, CRON_SECRET updated for both sync routes)
-- **Deployment:** Live — last deployed 2026-06-28 (OData limit + publishSite fixes)
+- **Deployment:** Live — last deployed 2026-07-01 (active-only filter + orphan cleanup)
+- **Rock filter:** Only `IsActive eq true` groups are fetched — inactive groups are skipped entirely
+- **Orphan cleanup:** Stage 2 reconciles Supabase and Webflow against Rock on every run; stale records are auto-deleted
 - **Leader images:** Always null — Rock returns `PhotoId` (int), not a `Photo.Guid` URL; wire up when Rock exposes it
 - **Available spots:** Planned — spec at `docs/superpowers/specs/2026-06-27-outreach-available-spots-design.md`, implementation plan at `docs/superpowers/plans/2026-06-28-outreach-available-spots.md`
 
@@ -172,6 +174,26 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 ---
 
 ## Recent Sessions
+
+### Session 11 (2026-07-01) — Fix: Inactive groups syncing to Supabase/Webflow + orphan cleanup
+
+**Goal/Problem:** Supabase and Webflow had 18 outreach records but Rock only showed 16 in the Sign-Up Overview. Two extra records were inactive groups (`IsActive=false`) that the sync was including per the original spec but the user doesn't want.
+
+**Root cause (two issues):**
+1. Rock's API excludes deleted/archived groups from its response entirely — they just disappear. The sync only deleted records when Rock returned `IsArchived=true`, so groups removed from Rock accumulated as stale orphans in Supabase/Webflow.
+2. Inactive groups (`IsActive=false`) were being synced to Supabase/Webflow with `is-active: false` per original design spec, but the desired behavior is to only sync active groups.
+
+**Solution:**
+- Added orphan reconciliation to `index.ts` Stage 2: after fetching Supabase projects, compares `rock_group_id` set against what Rock returned and deletes any rows not present in Rock. Also detects Webflow items whose `rock-opportunity-id` is not in the clean Supabase set and deletes them. Both deletion paths are combined (deduped) for the Webflow `deleteItems` call.
+- Added `and IsActive eq true` to the Rock API `$filter` in `rock-client.ts` so only active groups are fetched. On next sync, the orphan cleanup automatically removed the 2 stale inactive records.
+
+**Files Modified:**
+- `lib/sync/outreach/index.ts` — Stage 2 orphan reconciliation (Supabase + Webflow)
+- `lib/sync/outreach/rock-client.ts` — added `IsActive eq true` to Rock API filter
+
+**Status:** Deployed and verified — 145/145 tests passing, sync shows `processed: 16, deleted: 2`, counts match Rock
+
+---
 
 ### Session 10 (2026-06-28) — Planning: Available spots and is_full fields
 
@@ -255,39 +277,5 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 - `lib/__tests__/outreach-webflow-client.test.ts` — new test verifying `isDraft: false` is sent
 
 **Status:** Deployed and verified — 144/144 tests passing, all reference items published in Webflow
-
----
-
-### Session 06 (2026-06-25) — Feature: Leader names and profile images
-
-**Goal:** Add up to 2 leader names and photo URLs per outreach project, pulled from Rock RMS GroupMembers with a Leader role, synced through Supabase to Webflow CMS.
-
-**Solution:**
-- Added `RockRawGroupMember` interface and 4 new fields to `OutreachProject` (`leader_name`, `leader_name_2`, `leader_image`, `leader_image_2`)
-- Added `fetchLeaderMap(groupIds)` to `OutreachRockClient` — one batch call to `/api/GroupMembers` expanded with Person and GroupRole, filters leaders client-side
-- Wired into `fetchSignUpGroups()` via `Promise.all` alongside existing IdKey batch fetches; result passed into `transformProject()`
-- Added 4 new columns to Supabase `outreach_projects` (TEXT, nullable); upsert spreads them automatically
-- Added 4 PlainText fields to Webflow `outreach-projects` collection; `transformProjectForWebflow` writes them conditionally
-- Name format: `(NickName || FirstName) + " " + LastName`
-
-**Key decisions:**
-- Client-side `IsLeader` filtering required: Rock's OData 100-node limit is exceeded when combining 20+ GroupId OR conditions with `and GroupRole/IsLeader eq true`. Fetch all members by GroupId, filter in JavaScript.
-- Webflow slugs: Webflow assigned `leader-2-name` and `leader-2-profile-image` (not `leader-name-2` / `leader-profile-image-2` as expected) — code matches actual slugs.
-- Leader photos are null: Rock returns `PhotoId` (int) on Person, not `Photo.Guid`. The `RockRawGroupMember` type has `Photo.Guid` typed as future-ready; add a comment noting it's always null until Rock exposes the URL.
-- Supabase schema cache: must reload after adding new columns (`Project Settings → API → Reload schema cache`) before running sync, otherwise PostgREST silently ignores unknown fields in the upsert payload.
-
-**Files Modified:**
-- `lib/sync/outreach/types.ts` — added `RockRawGroupMember`, 4 new fields on `OutreachProject`
-- `lib/sync/outreach/rock-client.ts` — added `fetchLeaderMap`, updated `transformProject` + `fetchSignUpGroups`
-- `lib/sync/outreach/webflow-client.ts` — added 4 leader fields to `transformProjectForWebflow`
-- `lib/__tests__/outreach-rock-client.test.ts` — 13 new tests
-- `lib/__tests__/outreach-webflow-client.test.ts` — 3 new tests, updated `baseProject` fixture
-- `docs/superpowers/specs/2026-06-25-outreach-leader-names-design.md` — design spec
-- `docs/superpowers/plans/2026-06-25-outreach-leader-names.md` — implementation plan
-
-**Status:** Deployed and verified — 143/143 tests passing, leader names live in Webflow
-
----
-
 
 
