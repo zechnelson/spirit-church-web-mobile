@@ -38,6 +38,7 @@ spirit-church-web-mobile/
 | Navigation          | ACTIVE   | `docs/Development/navigation.md`       |
 | Groups Sync         | ACTIVE   | `docs/Development/groups-sync.md`      |
 | Outreach Sync       | ACTIVE   | `docs/Development/outreach-sync.md`    |
+| Giving              | ACTIVE   | `docs/Development/giving.md`           |
 | Auth / User Account | PLANNING | `docs/Development/auth.md`             |
 
 ## Documentation Table of Contents
@@ -87,6 +88,7 @@ spirit-church-web-mobile/
 | `navigation.md`   | BottomNav component — tab bar, active states, hide-on-scroll |
 | `groups-sync.md`  | Rock RMS → Supabase → Webflow CMS sync, cron config, Webflow field schema |
 | `outreach-sync.md` | Rock RMS Sign-Up Groups → Supabase → Webflow CMS sync, outreach project pipeline |
+| `giving.md`        | Giving tab — external redirect to Overflow donation page, no in-app page |
 
 ### Debug/ — Troubleshooting
 
