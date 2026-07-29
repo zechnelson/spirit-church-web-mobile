@@ -1,8 +1,26 @@
 # Groups Sync — Development
 
-## Overview
+## Status: DECOMMISSIONED (2026-07-29)
 
-Automated pipeline that syncs Connect Groups from Rock RMS → Supabase → Webflow CMS on a 6-hour cron schedule. Replaced a legacy Cloudflare Worker. The key bug this migration fixed: Webflow items were created as drafts and never published.
+This pipeline (Rock RMS → Supabase → Webflow CMS for Connect Groups) has been removed from this repo. A different sync process now handles Connect Groups → Webflow outside of this codebase.
+
+**Removed in this repo:**
+- `app/api/sync-groups/` route (GET/POST handler + tests)
+- `lib/sync/index.ts`, `rock-client.ts`, `supabase-client.ts`, `webflow-client.ts`, `types.ts`
+- `lib/__tests__/rock-client.test.ts`, `webflow-client.test.ts`, `sync-utils.test.ts`
+- `scripts/publish-all-groups.ts`
+- Groups-only helpers (`slugify`, `calculateSpotsAvailable`, `convertTo12Hour`, `parseMultiSelectAttribute`, `getImageUrl`) trimmed from `lib/sync/utils.ts`
+- `sync-groups` cron entry removed from `vercel.json`
+
+**Kept:** `lib/sync/utils.ts` (`log`/`logError` only) — still used by [[outreach-sync]]'s pipeline, which is unaffected by this removal.
+
+The content below is retained as historical reference for the decommissioned pipeline.
+
+---
+
+## Overview (historical)
+
+Automated pipeline that synced Connect Groups from Rock RMS → Supabase → Webflow CMS on a 6-hour cron schedule. Replaced a legacy Cloudflare Worker. The key bug this migration fixed: Webflow items were created as drafts and never published.
 
 ## Key Files
 
@@ -119,6 +137,23 @@ Expected response:
 ---
 
 ## Recent Sessions
+
+### Session 06 (2026-07-29) — Decommission: Remove pipeline, replaced by new sync process
+
+**Goal:** A different sync process now handles Rock RMS → Webflow for Connect Groups. Remove the cron, route, and all Supabase/Webflow group-sync code from this repo.
+
+**Solution:** Deleted `app/api/sync-groups/`, `lib/sync/{index,rock-client,supabase-client,webflow-client,types}.ts`, and their tests (`rock-client.test.ts`, `webflow-client.test.ts`, `sync-utils.test.ts`). Removed `scripts/publish-all-groups.ts`. Trimmed `lib/sync/utils.ts` down to `log`/`logError`, which [[outreach-sync]] still depends on — confirmed via grep that no outreach code imported the removed groups-only helpers. Removed the `sync-groups` cron entry from `vercel.json`, leaving `sync-outreach` in place.
+
+**Verified:** `npx vitest run` — 93/93 tests passing (down from 107; the 14 removed were groups-sync-specific). `npx tsc --noEmit` clean after clearing stale `.next` cache.
+
+**Files Modified:**
+- Deleted: `app/api/sync-groups/route.ts`, `app/api/sync-groups/route.test.ts`, `lib/sync/index.ts`, `lib/sync/rock-client.ts`, `lib/sync/supabase-client.ts`, `lib/sync/webflow-client.ts`, `lib/sync/types.ts`, `lib/__tests__/rock-client.test.ts`, `lib/__tests__/webflow-client.test.ts`, `lib/__tests__/sync-utils.test.ts`, `scripts/publish-all-groups.ts`
+- `lib/sync/utils.ts` — removed `slugify`, `calculateSpotsAvailable`, `convertTo12Hour`, `parseMultiSelectAttribute`, `getImageUrl`; kept `log`/`logError`
+- `vercel.json` — removed `sync-groups` cron entry
+
+**Status:** DECOMMISSIONED — see status note at top of this doc.
+
+---
 
 ### Session 05 (2026-06-18) — Change: Use Rock ID as Webflow slug
 
