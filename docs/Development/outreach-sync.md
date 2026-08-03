@@ -1,6 +1,20 @@
 # Outreach Sync — Development
 
-## Overview
+## Status: DECOMMISSIONED (2026-08-03)
+
+This pipeline (Rock RMS → Supabase → Webflow CMS for Outreach Projects) has been removed from this repo. A different sync process now handles Outreach Projects → Webflow outside of this codebase, mirroring [[groups-sync]].
+
+**Removed in this repo:**
+- `app/api/sync-outreach/` route (GET/POST handler)
+- `lib/sync/` (entire directory — `outreach/index.ts`, `outreach/rock-client.ts`, `outreach/supabase-client.ts`, `outreach/webflow-client.ts`, `outreach/types.ts`, and `utils.ts`, since `utils.ts`'s `log`/`logError` helpers had no remaining callers after [[groups-sync]] was already decommissioned)
+- `lib/__tests__/outreach-rock-client.test.ts`, `outreach-sync-route.test.ts`, `outreach-webflow-client.test.ts`
+- `sync-outreach` cron entry removed from `vercel.json` (now an empty `crons` array — it was the last remaining cron)
+
+The content below is retained as historical reference for the decommissioned pipeline.
+
+---
+
+## Overview (historical)
 
 Automated pipeline that syncs Outreach Projects (Rock RMS Sign-Up Groups) → Supabase → Webflow CMS on a 6-hour cron schedule. Mirrors the Groups Sync architecture.
 
@@ -175,6 +189,24 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 
 ## Recent Sessions
 
+### Session 12 (2026-08-03) — Decommission: Remove pipeline, replaced by new sync process
+
+**Goal:** A different sync process now handles Rock RMS → Webflow for Outreach Projects. Remove the cron, route, and all Supabase/Webflow outreach-sync code from this repo.
+
+**Solution:** Deleted `app/api/sync-outreach/`, `lib/sync/outreach/` (all 5 files), and their tests (`outreach-rock-client.test.ts`, `outreach-sync-route.test.ts`, `outreach-webflow-client.test.ts`). Also deleted `lib/sync/utils.ts` and the now-empty `lib/sync/` directory — confirmed via grep that `log`/`logError` had no callers left outside the outreach code being removed (groups-sync, the other former consumer, was already decommissioned 2026-07-29). Set `vercel.json` `crons` to an empty array since `sync-outreach` was the last remaining cron entry. Updated `CLAUDE.md` workstream status and TOC.
+
+**Verified:** `npx vitest run` — 14/14 tests passing (down from 145; all removed tests were outreach-sync-specific). `npx tsc --noEmit` clean after clearing stale `.next` cache.
+
+**Files Modified:**
+- Deleted: `app/api/sync-outreach/route.ts`, `lib/sync/` (entire directory), `lib/__tests__/outreach-rock-client.test.ts`, `lib/__tests__/outreach-sync-route.test.ts`, `lib/__tests__/outreach-webflow-client.test.ts`
+- `vercel.json` — `crons` set to `[]`
+- `CLAUDE.md` — Outreach Sync status → DECOMMISSIONED, TOC description updated
+- `docs/Development/groups-sync.md` — cross-reference note updated (outreach-sync no longer depends on `lib/sync/utils.ts`, since it's deleted too)
+
+**Status:** DECOMMISSIONED — see status note at top of this doc.
+
+---
+
 ### Session 11 (2026-07-01) — Fix: Inactive groups syncing to Supabase/Webflow + orphan cleanup
 
 **Goal/Problem:** Supabase and Webflow had 18 outreach records but Rock only showed 16 in the Sign-Up Overview. Two extra records were inactive groups (`IsActive=false`) that the sync was including per the original spec but the user doesn't want.
@@ -261,21 +293,6 @@ Do **not** use `$select=Id,IdKey` — computed properties are stripped from `$se
 
 ---
 
-### Session 07 (2026-06-25) — Fix: Reference collection items saved as draft
-
-**Goal/Problem:** Categories, cities, and other reference collection values created by the sync were `isDraft: true` in Webflow, making them invisible on the live site for filtering.
-
-**Root cause:** `upsertReferenceItem` posted `{ fieldData: { name, slug } }` without setting `isDraft: false`. Webflow defaults new items to draft. The `publishSite` call in Stage 3 rebuilds the site with already-published content — it does not flip draft items to published.
-
-**Solution:**
-- Added `isDraft: false` to the POST body in `upsertReferenceItem` — new reference items are created in published state from the start
-- Manually published all existing draft items via Webflow MCP `publish_collection_items` (5 categories + 3 cities that were stuck as drafts)
-- Corrected the Session 05 note: `publishItems` does work on reference collections (the earlier 404 was likely a different issue); it's just not needed anymore since items are now created as `isDraft: false`
-
-**Files Modified:**
-- `lib/sync/outreach/webflow-client.ts` — added `isDraft: false` to `upsertReferenceItem` POST body
-- `lib/__tests__/outreach-webflow-client.test.ts` — new test verifying `isDraft: false` is sent
-
-**Status:** Deployed and verified — 144/144 tests passing, all reference items published in Webflow
+Older sessions archived: Session 07 → `docs/Archive/sessions/session-016.md`
 
 

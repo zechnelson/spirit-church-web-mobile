@@ -12,7 +12,7 @@ This pipeline (Rock RMS → Supabase → Webflow CMS for Connect Groups) has bee
 - Groups-only helpers (`slugify`, `calculateSpotsAvailable`, `convertTo12Hour`, `parseMultiSelectAttribute`, `getImageUrl`) trimmed from `lib/sync/utils.ts`
 - `sync-groups` cron entry removed from `vercel.json`
 
-**Kept:** `lib/sync/utils.ts` (`log`/`logError` only) — still used by [[outreach-sync]]'s pipeline, which is unaffected by this removal.
+**Kept at the time:** `lib/sync/utils.ts` (`log`/`logError` only) — still used by [[outreach-sync]]'s pipeline, which was unaffected by this removal. `outreach-sync` was itself decommissioned 2026-08-03, and `lib/sync/utils.ts` (and the rest of `lib/sync/`) was deleted along with it.
 
 The content below is retained as historical reference for the decommissioned pipeline.
 
