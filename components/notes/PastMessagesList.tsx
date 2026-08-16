@@ -63,6 +63,7 @@ export function PastMessagesList({ currentMessageId }: PastMessagesListProps) {
             <button
               type="button"
               onClick={(e) => handleDelete(e, m.messageId)}
+              onKeyDown={(e) => e.stopPropagation()}
               aria-label={`Delete notes for ${m.title}`}
               className="rounded-full p-2 text-ink-400 hover:bg-ink-50 hover:text-red-500"
             >
