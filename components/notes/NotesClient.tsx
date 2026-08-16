@@ -6,10 +6,13 @@ import { SermonOutline } from "./SermonOutline";
 import { NoteEditor } from "./NoteEditor";
 import { FloatingNoteButton } from "./FloatingNoteButton";
 import { MyNotesModal } from "./MyNotesModal";
+import { getNotes, saveNotes, deleteNotes } from "@/lib/notesStorage";
 
 interface NotesClientProps {
+  messageId: string;
   sermonTitle: string;
   speaker: string;
+  date: string;
   outlineLines: string[];
 }
 
@@ -28,7 +31,7 @@ function chunkLines(lines: string[]): string[][] {
   return chunks.length > 0 ? chunks : [lines];
 }
 
-export function NotesClient({ sermonTitle, speaker, outlineLines }: NotesClientProps) {
+export function NotesClient({ messageId, sermonTitle, speaker, date, outlineLines }: NotesClientProps) {
   const [freeNotes, setFreeNotes] = useState<string>("");
   const [chunkNotes, setChunkNotes] = useState<string[]>([]);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
@@ -36,28 +39,39 @@ export function NotesClient({ sermonTitle, speaker, outlineLines }: NotesClientP
   const pendingToastRef = useRef(false);
 
   useEffect(() => {
-    setFreeNotes(sessionStorage.getItem("spirit-notes-free") ?? "");
-    try {
-      setChunkNotes(JSON.parse(sessionStorage.getItem("spirit-notes-chunks") ?? "[]"));
-    } catch {
-      // keep empty array
+    const record = getNotes(messageId);
+    if (record) {
+      setFreeNotes(record.freeNotes);
+      setChunkNotes(record.chunkNotes);
+    } else {
+      setFreeNotes("");
+      setChunkNotes([]);
     }
     setIsHydrated(true);
-  }, []);
+  }, [messageId]);
 
   useEffect(() => {
     if (!isHydrated) return;
-    sessionStorage.setItem("spirit-notes-free", freeNotes);
-  }, [freeNotes, isHydrated]);
-
-  useEffect(() => {
-    if (!isHydrated) return;
-    sessionStorage.setItem("spirit-notes-chunks", JSON.stringify(chunkNotes));
+    const hasContent = freeNotes.trim() !== "" || chunkNotes.some((c) => c?.trim());
+    if (hasContent) {
+      saveNotes({
+        messageId,
+        title: sermonTitle,
+        speaker,
+        date,
+        outlineLines,
+        freeNotes,
+        chunkNotes,
+        updatedAt: new Date().toISOString(),
+      });
+    } else {
+      deleteNotes(messageId);
+    }
     if (pendingToastRef.current) {
       pendingToastRef.current = false;
-      toast.success("Added to session notes");
+      toast.success("Notes saved");
     }
-  }, [chunkNotes, isHydrated]);
+  }, [freeNotes, chunkNotes, isHydrated, messageId, sermonTitle, speaker, date, outlineLines]);
 
   const chunks = chunkLines(outlineLines);
 
