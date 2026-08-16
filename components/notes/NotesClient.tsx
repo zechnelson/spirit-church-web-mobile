@@ -37,6 +37,7 @@ export function NotesClient({ messageId, sermonTitle, speaker, date, outlineLine
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const pendingToastRef = useRef(false);
+  const skipNextWriteRef = useRef(false);
 
   useEffect(() => {
     const record = getNotes(messageId);
@@ -47,11 +48,16 @@ export function NotesClient({ messageId, sermonTitle, speaker, date, outlineLine
       setFreeNotes("");
       setChunkNotes([]);
     }
+    skipNextWriteRef.current = true;
     setIsHydrated(true);
   }, [messageId]);
 
   useEffect(() => {
     if (!isHydrated) return;
+    if (skipNextWriteRef.current) {
+      skipNextWriteRef.current = false;
+      return;
+    }
     const hasContent = freeNotes.trim() !== "" || chunkNotes.some((c) => c?.trim());
     if (hasContent) {
       saveNotes({
