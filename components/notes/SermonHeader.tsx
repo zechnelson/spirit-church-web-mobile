@@ -3,13 +3,20 @@ interface SermonHeaderProps {
   speaker: string;
   date: string;
   scripture?: string;
+  eyebrow?: string;
 }
 
-export function SermonHeader({ title, speaker, date, scripture }: SermonHeaderProps) {
+export function SermonHeader({
+  title,
+  speaker,
+  date,
+  scripture,
+  eyebrow = "Today's Message",
+}: SermonHeaderProps) {
   return (
     <div className="px-4 pb-5 pt-6">
       <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-brand-500">
-        Today&apos;s Message
+        {eyebrow}
       </p>
       <h1 className="text-[26px] font-bold leading-tight tracking-tight text-ink-900">
         {title}
