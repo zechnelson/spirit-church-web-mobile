@@ -49,6 +49,7 @@ export interface AppSliderCard {
 }
 
 export interface AppMessage {
+  id: string;
   title: string;
   speaker: string;
   date: string;
@@ -162,6 +163,7 @@ export async function getLatestMessage(): Promise<AppMessage | null> {
   }
 
   return {
+    id: item.id,
     title: fd.name as string,
     speaker,
     date: formatDate(fd.date as string | null),
