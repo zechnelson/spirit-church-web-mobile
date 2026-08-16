@@ -61,6 +61,7 @@ spirit-church-web-mobile/
 
 | File | Description |
 | ---- | ----------- |
+| `sermon-notes-history.md` | Persist sermon notes via localStorage (survives browser close); browse/edit/delete past sermons' notes |
 
 <!-- Add PRDs as features are planned -->
 
