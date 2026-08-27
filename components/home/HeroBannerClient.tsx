@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { HeroBanner } from "./HeroBanner";
-import { getSundayHeroCard } from "@/lib/sunday-hero";
+import { getScheduledHeroCard } from "@/lib/hero-schedule";
+import type { AppSliderCard } from "@/lib/webflow";
 
 interface HeroCard {
   text: string;
@@ -11,30 +12,31 @@ interface HeroCard {
 }
 
 interface HeroBannerClientProps {
+  cards: AppSliderCard[];
   fallback: HeroCard;
 }
 
-export function HeroBannerClient({ fallback }: HeroBannerClientProps) {
+export function HeroBannerClient({ cards, fallback }: HeroBannerClientProps) {
   const [card, setCard] = useState<HeroCard>(fallback);
-  const [isSundayCard, setIsSundayCard] = useState(false);
+  const [isScheduledCard, setIsScheduledCard] = useState(false);
 
   useEffect(() => {
-    const sunday = getSundayHeroCard();
-    if (sunday) {
-      setCard(sunday);
-      setIsSundayCard(true);
+    const scheduled = getScheduledHeroCard(cards);
+    if (scheduled) {
+      setCard(scheduled);
+      setIsScheduledCard(true);
     } else {
       setCard(fallback);
-      setIsSundayCard(false);
+      setIsScheduledCard(false);
     }
-  }, [fallback]);
+  }, [cards, fallback]);
 
   return (
     <HeroBanner
       text={card.text}
       href={card.href}
       imageSrc={card.imageSrc}
-      directLinkButton={isSundayCard}
+      directLinkButton={isScheduledCard}
     />
   );
 }

@@ -22,14 +22,15 @@ export default async function HomePage() {
     getNextSteps().catch(() => []),
   ]);
 
-  const hero = sliderCards[0];
+  const defaultHero = sliderCards.find((card) => !card.scheduleDay) ?? sliderCards[0];
 
   return (
     <div className="pb-6">
       <HomeHeader />
 
       <HeroBannerClient
-        fallback={hero ?? { text: "Welcome to Spirit Church", href: "#" }}
+        cards={sliderCards}
+        fallback={defaultHero ?? { text: "Welcome to Spirit Church", href: "#" }}
       />
 
       <CarouselSection title="Your next step">
