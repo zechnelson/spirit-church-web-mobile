@@ -93,7 +93,17 @@ Run `npm test` to verify all unit tests pass.
 - `components/home/HeroBannerClient.tsx` — accepts `cards` array instead of single `fallback` card
 - `app/(tabs)/page.tsx` — passes full `sliderCards` + computed default fallback
 
-**Status:** VERIFIED WORKING (16/16 tests pass, typecheck clean, browser-tested against live Webflow data). Client still needs to populate the 4 real service-time cards (Connect/Yes × early/late service) in Webflow with the new schedule fields — currently no items have `schedule-day` set, so the CMS default card shows at all times.
+**Status:** VERIFIED WORKING (16/16 tests pass, typecheck clean, browser-tested against live Webflow data). Client needed to populate the 4 real service-time cards — see Session 09.
+
+---
+
+### Session 09 (2026-08-27) — Verified client-populated Sunday schedule cards
+
+**Goal/Problem:** Client created the 4 real service-time items in the `headerCards` collection (per Session 08); needed to confirm the Option field selections actually decode to the correct days/times before trusting it live.
+
+**Solution:** Fetched the live collection items via the Webflow MCP and cross-checked each item's `schedule-day`/`schedule-*-hour`/`schedule-*-minute` option ids against the lookup tables in `lib/webflow.ts`. All 4 items matched the original hardcoded windows exactly (9:00–9:50, 9:50–10:10, 10:45–11:35, 11:35–11:55 AM Sunday), correct `card-text`/`card-link`/images, all published, no overlaps. Confirmed exactly one published item ("It's Complicated: Questions") has no `schedule-day` set, making it the unambiguous always-on default; a second unscheduled item ("Weekly quote") remains in draft so it's filtered out and not a conflict. No code changes this session.
+
+**Status:** VERIFIED WORKING — client's live CMS setup is correct and ready to go.
 
 ---
 
@@ -129,19 +139,6 @@ Run `npm test` to verify all unit tests pass.
 
 ---
 
-### Session 04 (2026-05-30) — Group images in home carousel
-
-**Goal:** Show real group images in the "Join a group" carousel instead of a placeholder.
-
-**Solution:** Added `imageSrc?: string` to the `AppGroup` interface and mapped `item.fieldData["group-image"]` as `WfImage` in `getGroups()`. `GroupCard` already accepted `imageSrc?` with a placeholder fallback — no component changes needed. `page.tsx` already spreads `{...group}` onto `GroupCard` — no page changes needed.
-
-**Files Modified:**
-- `lib/webflow.ts` — added `imageSrc` to `AppGroup`; mapped `group-image` in `getGroups()`
-
-**Status:** VERIFIED WORKING (requires sync to have run since `group-image` field was added)
-
----
-
 ### Session 06 (2026-06-04) — Home screen section reorder
 
 **Goal:** Move "Your next step" carousel above "Upcoming events" on the home screen.
@@ -155,4 +152,4 @@ Run `npm test` to verify all unit tests pass.
 
 ---
 
-*Older sessions archived in `docs/Archive/sessions/` — see `session-018.md` for Session 03 (Time-gated hero banner, superseded by Session 08 above).*
+*Older sessions archived in `docs/Archive/sessions/` — see `session-018.md` for Session 03 (Time-gated hero banner, superseded by Session 08 above) and `session-019.md` for Session 04 (Group images in home carousel).*
